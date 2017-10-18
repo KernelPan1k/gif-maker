@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/mi-k4/gif-maker/issues"
   },
-  "homepage": "https://github.com/mi-k4/gif-maker#readme"
+  "homepage": "https://github.com/mi-k4/gif-maker#readme",
+  "devDependencies": {
+    "eslint": "^4.9.0"
+  }
 }
