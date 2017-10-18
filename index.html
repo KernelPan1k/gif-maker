@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>MMGifMaker</title>
+    <link rel="stylesheet" href="assets/css/font-awesome.min.css">
+    <link rel="stylesheet" href="node_modules/sweetalert/dist/sweetalert.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="container">
+    <nav>
+        <ul>
+            <li>
+                <a href="#projectPage">Projet</a>
+            </li>
+            <li>
+                <a href="#uploadPage">Upload</a>
+            </li>
+            <li>
+                <a id="updatePicturePageLink" href="#picturePage">Images</a>
+            </li>
+            <li>
+                <a id="updatePreviewPageLink" href="#previewPage">Preview</a>
+            </li>
+            <li>
+                <a id="quitLink">Quitter</a>
+            </li>
+        </ul>
+    </nav>
+    <div class="content">
+        <div id="projectPage" class="page">
+            <h1>MMGifMaker</h1>
+            <h2>Nouveau projet</h2>
+            <input id="projectNameInput" type="text"/>
+            <br>
+            <input type="button" value="Créer" id="createProjectButton">
+            <input type="button" value="Supprimer" id="deleteProjectButton" class="hidden">
+        </div>
+        <div id="uploadPage" class="page lh">
+            <div class="border">
+                <p id="uploadPageMessage">
+                    Glisser le fichier ou ...
+                </p>
+                <input id="uploadFileButton" type="file" value="uploadPage file"/>
+            </div>
+        </div>
+        <div id="picturePage" class="page">
+            <table id="pictureTable">
+            </table>
+        </div>
+        <div id="editPage" class="page">
+            <form>
+                <fieldset>
+                    <legend>Editer un image</legend>
+                    <p>Dimension</p>
+                    <input type="hidden" id="pictureIdHidden"/>
+                    <label for="editWidthInput">Largeur</label>
+                    <input type="text" id="editWidthInput"/>
+                    <label for="editHeightInput">Hauteur</label>
+                    <input type="text" id="editHeightInput"/>
+                    <label for="ratioCheckbox">Conserver le ratio</label>
+                    <input type="checkbox" checked id="ratioCheckbox"/>
+                    <hr>
+                    <div id="jpg">
+                        <label for="useAtBgCheckbox">Utiliser comme image de fonds ?</label>
+                        <input type="checkbox" id="useAtBgCheckbox"/>
+                    </div>
+                    <div id="gif">
+                        <label for="explodeGifCheckbox">Décomposer le gif ?</label>
+                        <input type="checkbox" id="explodeGifCheckbox"/>
+                    </div>
+                    <br>
+                    <input type="button" value="Appliquer les changements" id="submitEditButton"/>
+                </fieldset>
+            </form>
+        </div>
+        <div id="usePicturePage" class="page">
+            <div id="useBackground">
+                <form>
+                    <fieldset>
+                        <legend>utilisation des images</legend>
+                        <div>
+                            <label for="duplicateButton">Copier cette image</label>
+                            <input data-use="" type="button" id="duplicateButton" value="Dupliquer">
+                        </div>
+                        <div class="hidden">
+                            <label for="fusionButton">Fusionner les images</label>
+                            <input data-use="" type="button" value="Fusionner" id="fusionButton">
+                        </div>
+                    </fieldset>
+                </form>
+                <table id="containerUseBackground">
+                </table>
+                <input data-use="" class="hidden" type="button" id="loadFusionButton" value="Préparer la fusion">
+            </div>
+        </div>
+        <div id="fusionPage" class="page">
+            <div id="fusionContainer" data-picture="" data-bg="">
+                <img src=""
+                     id="pictureFusion"
+                     draggable="true"
+                     class="drag"
+                     data-coord-x=""
+                     data-coord-y=""
+                     data-offset-x=""
+                     data-offset-y=""
+                     data-action=""
+                     data-start-width=""
+                     data-start-height=""/>
+            </div>
+            <input type="button" id="makeFusionButton" value="Fusionner">
+        </div>
+        <div id="previewPage" class="page">
+            <div id="previewContainer">
+                <img src="" id="previewPicture">
+            </div>
+            <div>
+                <label for="speedInput">Vitesse</label>
+                <input type="text" id="speedInput" value="200"/>
+                <input type="button" id="previewButton" value="Lancer la preview">
+                <input type="button" id="buildButton" value="Construire le gif">
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/template" id="backgroundTemplate">
+    <tr>
+        <td>
+            <img src="%src%"/>
+        </td>
+        <td>
+            <input class="bgList" data-bg="%id%" type="checkbox" checked/>
+        </td>
+    </tr>
+</script>
+<script type="text/template" id="pictureTemplate">
+    <tr class="pictureEditRow" data-image="%data%">
+        <td>
+            <img src="%src%"/>
+        </td>
+        <td>
+            %info%
+        </td>
+        <td>
+            <a data-image="%data%" class="editPictureCollectionLink"><i class="fa fa-3x fa-edit"></i></a>
+        </td>
+        <td>
+            <a data-image="%data%" class="usePictureCollectionLink"><i class="fa fa-3x fa-wrench"></i></a>
+        </td>
+        <td>
+            <a data-image="%data%" class="deletePictureCollectionLink"><i class="fa fa-3x fa-remove"></i></a>
+        </td>
+        <td>
+            <a data-image="%data%" class="sortable"><i class="fa fa-3x fa-sort"></i></a>
+        </td>
+    </tr>
+</script>
+<script src="node_modules/sweetalert/dist/sweetalert.min.js"></script>
+<script src="node_modules/sortablejs/Sortable.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
