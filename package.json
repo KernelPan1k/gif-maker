@@ -21,5 +21,10 @@
   "homepage": "https://github.com/mi-k4/gif-maker#readme",
   "devDependencies": {
     "eslint": "^4.9.0"
+  },
+  "dependencies": {
+    "nw": "^0.26.0",
+    "sortablejs": "^1.6.1",
+    "sweetalert": "^2.0.8"
   }
 }
