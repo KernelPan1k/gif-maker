@@ -1,0 +1,184 @@
+html body {
+    width: 100%;
+    height: 4000px;
+    overflow: hidden;
+}
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 80%;
+    bottom: 0;
+    background-color: darkslategrey;
+
+}
+
+.content {
+    display: block;
+    height: 100%;
+    width: 100%;
+    position: relative;
+    margin-left: 20%;
+}
+
+nav ul {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+nav li {
+    list-style: none;
+    padding: 20px 0;
+    width: 100%;
+}
+
+nav a {
+    color: #fff;
+    text-align: center;
+    font-weight: bold;
+    text-decoration: none;
+    width: 100%;
+    display: block;
+}
+
+nav li:hover {
+    background-color: lightcyan;
+}
+
+nav li:hover > a {
+    color: darkslategrey
+}
+
+.page {
+    width: 78%;
+    min-height: 800px;
+    height: 800px;
+    display: block;
+    padding: 10px;
+}
+
+.lh {
+    line-height: 200px;
+}
+
+.border {
+    height: 98%;
+    width: 100%;
+    margin: 10px;
+    border: 3px dashed cornflowerblue;
+}
+
+.page p, h1, h2, label {
+    text-align: center;
+    display: block;
+    margin: 30px 0;
+}
+
+h1 {
+    margin: 60px 0;
+}
+
+.page input {
+    display: block;
+    margin: 30px auto;
+    width: 60%;
+    height: 30px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+input[type=button] {
+    height: 50px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    background-color: cadetblue;
+    color: aliceblue;
+}
+
+#picturePage table, #useBackground {
+    width: 80%;
+    display: block;
+    margin: 20px auto;
+    border-collapse: collapse;
+    max-height: 740px;
+    overflow-y: scroll;
+}
+
+#picturePage table td {
+    border: 1px solid rgba(170, 170, 170, .3);
+    width: 15%;
+    text-align: center;
+}
+
+#containerUseBackground {
+    width: 40%;
+    display: block;
+    margin: 20px auto;
+    border-collapse: collapse;
+}
+
+#containerUseBackground td {
+    border: 1px solid rgba(170, 170, 170, .3);
+    text-align: center;
+    width: 50%;
+
+}
+
+#picturePage img, #containerUseBackground img {
+    width: 100%;
+    height: auto;
+}
+
+#fusionPage {
+    min-width: 800px;
+    max-height: 700px;
+    overflow: scroll;
+}
+#fusionContainer {
+    display: block;
+    margin: 20px auto;
+    position: relative;
+    -webkit-background-size: 100% 100%;
+    background-size: 100% 100%;
+}
+
+#pictureFusion {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+}
+
+.resize {
+    opacity: .8;
+}
+
+#previewPage {
+    max-height: 800px;
+    max-width: 800px;
+    overflow: scroll;
+}
+
+#previewContainer {
+    max-height: 700px;
+    max-width: 800px;
+    display: block;
+    margin: 20px auto;
+}
+
+#previewPicture {
+    display: block;
+    margin: auto;
+}
