@@ -20,9 +20,6 @@
         "error",
         "always"
       ],
-      "meteor/no-session": [
-        0
-      ],
       "no-plusplus": [
         "error",
         {
