@@ -3,6 +3,8 @@ const swal = require('sweetalert');
 const _ = require('underscore');
 const messages = require('./message.fr.json');
 const s = require('underscore.string');
+const gui = require('nw.gui');
+const win = gui.Window.get();
 
 const baseOutputPath = process.env.PWD + '/output/';
 let project = null;
@@ -113,6 +115,11 @@ const deleteProjectMethod = () => {
     });
 };
 
+const quitMethod = () => {
+    win.close();
+    return process.exit();
+};
+
 const loadPictureMethod = () => {};
 const loadPreviewMethod = () => {};
 const editPictureMethod = () => {};
@@ -127,7 +134,6 @@ const dragOverMethod = () => {};
 const dragLeaveMethod = () => {};
 const startDragMethod = () => {};
 const toogleDragResizeMethod = () => {};
-const quitMethod = () => {};
 const stopDragMethod = () => {};
 const buildMethod = () => {};
 
