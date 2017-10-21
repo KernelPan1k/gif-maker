@@ -191,12 +191,12 @@ class Utils {
             ('success' === type)
                 ? 'Bravo'
                 : ('warning' === type)
-                ? 'Attention'
-                : ('error' === type)
-                    ? 'Erreur'
-                    : ('confirm' === type)
-                        ? 'Confirmation'
-                        : 'Message';
+                    ? 'Attention'
+                    : ('error' === type)
+                        ? 'Erreur'
+                        : ('confirm' === type)
+                            ? 'Confirmation'
+                            : 'Message';
 
         if ('confirm' === type) {
             return swal({
