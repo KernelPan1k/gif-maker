@@ -120,6 +120,24 @@ const quitMethod = () => {
     return process.exit();
 };
 
+const fixBehavior = () => {
+    window.ondragover = window.ondrop = function (e) {
+        e.preventDefault();
+        return false;
+    };
+};
+
+const dragOverMethod = () => {
+    document.querySelector('#uploadPageMessage').innerHTML = messages.drag.over;
+};
+
+const dragLeaveMethod = () => {
+    document.querySelector('#uploadPageMessage').innerHTML = messages.drag.leave;
+};
+
+const isPicture = (mime) => _.contains(['image/gif', 'image/jpeg', 'image/png'], mime);
+
+const startDragMethod = () => {};
 const loadPictureMethod = () => {};
 const loadPreviewMethod = () => {};
 const editPictureMethod = () => {};
@@ -130,12 +148,11 @@ const makeFusionMethod = () => {};
 const ratioMethod = () => {};
 const sizeMethod = () => {};
 const uploadMethod = () => {};
-const dragOverMethod = () => {};
-const dragLeaveMethod = () => {};
-const startDragMethod = () => {};
 const toogleDragResizeMethod = () => {};
 const stopDragMethod = () => {};
 const buildMethod = () => {};
+
+fixBehavior();
 
 createButton.addEventListener('click', createProjectMethod, false);
 deleteProjectButton.addEventListener('click', deleteProjectMethod, false);
