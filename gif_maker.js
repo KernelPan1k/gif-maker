@@ -39,7 +39,7 @@ class GifMaker {
         this.createButton.addEventListener('click', this.createProjectMethod, false);
         this.deleteProjectButton.addEventListener('click', this.deleteProjectMethod, false);
         this.updatePicturePageLink.addEventListener('click', this.loadPictureMethod, false);
-        this.updatePreviewPageLink.addEventListener('click', this.loadPreviewMetho, false);
+        this.updatePreviewPageLink.addEventListener('click', this.loadPreviewMethod, false);
         this.submitEditButton.addEventListener('click', this.editPictureMethod, false);
         this.duplicateButton.addEventListener('click', this.duplicateMethod, false);
         this.fusionButton.addEventListener('click', this.prepareFusionLoadMethod, false);
@@ -78,7 +78,7 @@ class GifMaker {
 
     }
 
-    loadPreviewMetho() {
+    loadPreviewMethod() {
 
     }
 
