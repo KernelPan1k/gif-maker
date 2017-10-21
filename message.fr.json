@@ -1,0 +1,19 @@
+{
+  "error": {
+    "project_exist": "Un projet du même nom existe déjà"
+  },
+  "success": {
+    "ok": "ok"
+  },
+  "alert_title": {
+    "success": "Bravo",
+    "warning": "Attention",
+    "error": "Erreur",
+    "confirmation": "Confirmation",
+    "message": "Message"
+  },
+  "button": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler"
+  }
+}

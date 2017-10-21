@@ -1,11 +1,6 @@
 {
   "parser": "babel-eslint",
-  "plugins": [
-    "meteor"
-  ],
   "extends": [
-    "airbnb",
-    "plugin:meteor/recommended",
     "eslint:recommended"
   ],
   "settings": {

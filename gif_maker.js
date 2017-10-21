@@ -1,223 +1,135 @@
-import { fs } from 'fs';
-import { swal } from 'sweetalert';
-import { _ } from 'underscore';
+const fs = require('fs');
+const swal = require('sweetalert');
+const _ = require('underscore');
+const messages = require('./message.fr.json');
+const s = require('underscore.string');
 
-class GifMaker {
-    constructor() {
-        this.project = undefined;
-        this.utils = new Utils();
-        GifMaker.fixBehavior();
-        this.getDOMElements();
-        this.bindEvents();
-        this.baseOutputPath = process.env.PWD + '/output/';
-    }
+const baseOutputPath = process.env.PWD + '/output/';
+let project = null;
 
-    getDOMElements() {
-        this.uploadPage = document.querySelector('#uploadPage');
-        this.createButton = document.querySelector('#createProjectButton');
-        this.deleteProjectButton = document.querySelector('#deleteProjectButton');
-        this.uploadFileButton = document.querySelector('#uploadFileButton');
-        this.submitEditButton = document.querySelector('#submitEditButton');
-        this.duplicateButton = document.querySelector('#duplicateButton');
-        this.fusionButton = document.querySelector('#fusionButton');
-        this.loadFusionButton = document.querySelector('#loadFusionButton');
-        this.makeFusionButton = document.querySelector('#makeFusionButton');
-        this.projectNameInput = document.querySelector('#projectNameInput');
-        this.editWidthInput = document.querySelector('#editWidthInput');
-        this.editHeightInput = document.querySelector('#editHeightInput');
-        this.pictureIdHidden = document.querySelector('#pictureIdHidden');
-        this.ratioCheckbox = document.querySelector('#ratioCheckbox');
-        this.useAtBgCheckbox = document.querySelector('#useAtBgCheckbox');
-        this.explodeGifCheckbox = document.querySelector('#explodeGifCheckbox');
-        this.updatePicturePageLink = document.querySelector('#updatePicturePageLink');
-        this.quitLink = document.querySelector('#quitLink');
-        this.editPictureCollectionLink = document.querySelectorAll('.editPictureCollectionLink');
-        this.deletePictureCollectionLink = document.querySelectorAll('.deletePictureCollectionLink');
-        this.usePictureCollectionLink = document.querySelectorAll('.usePictureCollectionLink');
-        this.updatePreviewPageLink = document.querySelector('#updatePreviewPageLink');
-        this.pictureTable = document.querySelector('#pictureTable');
-        this.fusionContainer = document.querySelector('#fusionContainer');
-        this.pictureFusion = document.querySelector('#pictureFusion');
-        this.previewPicture = document.querySelector('#previewPicture');
-    }
+const uploadPage = document.querySelector('#uploadPage');
+const createButton = document.querySelector('#createProjectButton');
+const deleteProjectButton = document.querySelector('#deleteProjectButton');
+const uploadFileButton = document.querySelector('#uploadFileButton');
+const submitEditButton = document.querySelector('#submitEditButton');
+const duplicateButton = document.querySelector('#duplicateButton');
+const fusionButton = document.querySelector('#fusionButton');
+const loadFusionButton = document.querySelector('#loadFusionButton');
+const makeFusionButton = document.querySelector('#makeFusionButton');
+const projectNameInput = document.querySelector('#projectNameInput');
+const editWidthInput = document.querySelector('#editWidthInput');
+const editHeightInput = document.querySelector('#editHeightInput');
+const pictureIdHidden = document.querySelector('#pictureIdHidden');
+const ratioCheckbox = document.querySelector('#ratioCheckbox');
+const useAtBgCheckbox = document.querySelector('#useAtBgCheckbox');
+const explodeGifCheckbox = document.querySelector('#explodeGifCheckbox');
+const updatePicturePageLink = document.querySelector('#updatePicturePageLink');
+const quitLink = document.querySelector('#quitLink');
+const editPictureCollectionLink = document.querySelectorAll('.editPictureCollectionLink');
+const deletePictureCollectionLink = document.querySelectorAll('.deletePictureCollectionLink');
+const usePictureCollectionLink = document.querySelectorAll('.usePictureCollectionLink');
+const updatePreviewPageLink = document.querySelector('#updatePreviewPageLink');
+const pictureTable = document.querySelector('#pictureTable');
+const fusionContainer = document.querySelector('#fusionContainer');
+const pictureFusion = document.querySelector('#pictureFusion');
+const previewPicture = document.querySelector('#previewPicture');
 
-    bindEvents() {
-        this.createButton.addEventListener('click', this.createProjectMethod, false);
-        this.deleteProjectButton.addEventListener('click', this.deleteProjectMethod, false);
-        this.updatePicturePageLink.addEventListener('click', this.loadPictureMethod, false);
-        this.updatePreviewPageLink.addEventListener('click', this.loadPreviewMethod, false);
-        this.submitEditButton.addEventListener('click', this.editPictureMethod, false);
-        this.duplicateButton.addEventListener('click', this.duplicateMethod, false);
-        this.fusionButton.addEventListener('click', this.prepareFusionLoadMethod, false);
-        this.loadFusionButton.addEventListener('click', this.fusionLoadMethod, false);
-        this.makeFusionButton.addEventListener('click', this.makeFusionMethod, false);
-        this.ratioCheckbox.addEventListener('click', this.ratioMethod, false);
-        this.editHeightInput.addEventListener('blur', this.sizeMethod, false);
-        this.editWidthInput.addEventListener('blur', this.sizeMethod, false);
-        this.uploadPage.addEventListener('drop', this.uploadMethod, false);
-        this.uploadFileButton.addEventListener('change', this.uploadMethod, false);
-        this.uploadPage.addEventListener('dragover', this.dragOverMethod, false);
-        this.uploadPage.addEventListener('dragleave', this.dragLeaveMethod, false);
-        this.pictureFusion.addEventListener('mousedown', this.startDragMethod, false);
-        this.fusionContainer.addEventListener('mouseup', this.stopDragMethod, false);
-        this.pictureFusion.addEventListener('dblclick', this.toogleDragResizeMethod, false);
-        this.quitLink.addEventListener('click', this.quitMethod, false);
-        document.querySelector('#buildButton').addEventListener('click', this.buildMethod, false);
-    }
+const scroll = (target) => {
+    return window.scrollTo(0, target.offsetTop);
+};
 
-    static fixBehavior() {
-        window.ondragover = window.ondrop = (event) => {
-            event.preventDefault();
-            return false;
-        };
-    }
+const notify = (text, type, arg, callback) => {
+    const title =
+        ('success' === type)
+            ? messages.alert_title.success
+            : ('warning' === type)
+                ? messages.alert_title.warning
+                : ('error' === type)
+                    ? messages.alert_title.error
+                    : ('confirm' === type)
+                        ? messages.alert_title.confirmation
+                        : messages.alert_title.message;
 
-    createProjectMethod() {
-        const name = this.utils.slugify(_.trim(this.projectNameInput.value));
-        const path = this.baseOutputPath + name;
-
-        fs.exists(path, (exist) => {
-            if (exist) {
-                this.utils.notify('Un projet du même nom existe déjà', 'error');
-                return;
+    if ('confirm' === type) {
+        return swal({
+            title: title,
+            text: text,
+            type: 'info',
+            showCancelButton: true,
+            confirmButtonText: messages.button.confirm,
+            cancelButtonText: messages.button.cancel,
+            closeOnConfirm: true,
+            closeOnCancel: true,
+        }, (isConfirm) => {
+            if (isConfirm) {
+                return callback ? callback(arg) : true;
             }
-
-            fs.mkdir(path, () => {
-                this.project = new Project(this.baseOutputPath, name);
-                this.createButton.className = 'hidden';
-                this.deleteProjectButton.className = '';
-                this.utils.notify('ok', 'success');
-                Utils.scroll(this.uploadPage);
-            });
         });
     }
 
-    deleteProjectMethod() {
+    return swal(title, text, type);
+};
 
-    }
+const createProjectMethod = () => {
+    const name = s(projectNameInput.value).clean().trim().value();
+    const path = baseOutputPath + name;
 
-    loadPictureMethod() {
-
-    }
-
-    loadPreviewMethod() {
-
-    }
-
-    editPictureMethod() {
-
-    }
-
-    duplicateMethod() {
-
-    }
-
-    prepareFusionLoadMethod() {
-
-    }
-
-    fusionLoadMethod() {
-
-    }
-
-    makeFusionMethod() {
-
-    }
-
-    ratioMethod() {
-
-    }
-
-    sizeMethod() {
-
-    }
-
-    uploadMethod() {
-
-    }
-
-    dragOverMethod() {
-
-    }
-
-    dragLeaveMethod() {
-
-    }
-
-    startDragMethod() {
-
-    }
-
-    stopDragMethod() {
-
-    }
-
-    toogleDragResizeMethod() {
-
-    }
-
-    quitMethod() {
-
-    }
-}
-
-class Utils {
-    static scroll(target) {
-        return window.scrollTo(0, target.offsetTop);
-    }
-
-    slugify(s) {
-        let str = s;
-        const from = 'àáäâèéëêìíïîòóöôùúüûñç·/_,:;';
-        const to = 'aaaaeeeeiiiioooouuuunc------';
-
-        str = str.replace(/^\s+|\s+$/g, '');
-        str = str.toLowerCase();
-
-        _.each(from, (f, i) => {
-            str = str.replace(new RegExp(f, 'g'), to.charAt(i));
-        });
-
-        str = str
-            .replace(/[^a-z0-9 -]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-');
-
-        return str;
-    }
-
-    notify(text, type, arg, callback) {
-        const title =
-            ('success' === type)
-                ? 'Bravo'
-                : ('warning' === type)
-                    ? 'Attention'
-                    : ('error' === type)
-                        ? 'Erreur'
-                        : ('confirm' === type)
-                            ? 'Confirmation'
-                            : 'Message';
-
-        if ('confirm' === type) {
-            return swal({
-                title: title,
-                text: text,
-                type: 'info',
-                showCancelButton: true,
-                confirmButtonText: 'Confirmer',
-                cancelButtonText: 'Annuler',
-                closeOnConfirm: true,
-                closeOnCancel: true,
-            }, (isConfirm) => {
-                if (isConfirm) {
-                    return callback ? callback(arg) : true;
-                }
-            });
+    fs.exists(path, (exist) => {
+        if (exist) {
+            notify(messages.error.project_exist, 'error');
+            return;
         }
 
-        return swal(title, text, type);
-    }
-}
+        fs.mkdir(path, () => {
+            project = new Project(this.baseOutputPath, name);
+            createButton.className = 'hidden';
+            deleteProjectButton.className = '';
+            notify(messages.success.ok, 'success');
+            scroll(uploadPage);
+        });
+    });
+};
+
+const deleteProjectMethod = () => {};
+const loadPictureMethod = () => {};
+const loadPreviewMethod = () => {};
+const editPictureMethod = () => {};
+const duplicateMethod = () => {};
+const prepareFusionLoadMethod = () => {};
+const fusionLoadMethod = () => {};
+const makeFusionMethod = () => {};
+const ratioMethod = () => {};
+const sizeMethod = () => {};
+const uploadMethod = () => {};
+const dragOverMethod = () => {};
+const dragLeaveMethod = () => {};
+const startDragMethod = () => {};
+const toogleDragResizeMethod = () => {};
+const quitMethod = () => {};
+const stopDragMethod = () => {};
+const buildMethod = () => {};
+
+createButton.addEventListener('click', createProjectMethod, false);
+deleteProjectButton.addEventListener('click', deleteProjectMethod, false);
+updatePicturePageLink.addEventListener('click', loadPictureMethod, false);
+updatePreviewPageLink.addEventListener('click', loadPreviewMethod, false);
+submitEditButton.addEventListener('click', editPictureMethod, false);
+duplicateButton.addEventListener('click', duplicateMethod, false);
+fusionButton.addEventListener('click', prepareFusionLoadMethod, false);
+loadFusionButton.addEventListener('click', fusionLoadMethod, false);
+makeFusionButton.addEventListener('click', makeFusionMethod, false);
+ratioCheckbox.addEventListener('click', ratioMethod, false);
+editHeightInput.addEventListener('blur', sizeMethod, false);
+editWidthInput.addEventListener('blur', sizeMethod, false);
+uploadPage.addEventListener('drop', uploadMethod, false);
+uploadFileButton.addEventListener('change', uploadMethod, false);
+uploadPage.addEventListener('dragover', dragOverMethod, false);
+uploadPage.addEventListener('dragleave', dragLeaveMethod, false);
+pictureFusion.addEventListener('mousedown', startDragMethod, false);
+fusionContainer.addEventListener('mouseup', stopDragMethod, false);
+pictureFusion.addEventListener('dblclick', toogleDragResizeMethod, false);
+quitLink.addEventListener('click', quitMethod, false);
+document.querySelector('#buildButton').addEventListener('click', buildMethod, false);
 
 class Project {
     constructor(base, name) {
