@@ -1,6 +1,7 @@
 const fs = require('fs.extra');
 const swal = require('sweetalert');
 const _ = require('underscore');
+const path = require('path');
 const messages = require('./message.fr.json');
 const s = require('underscore.string');
 const gui = require('nw.gui');
@@ -137,6 +138,68 @@ const dragLeaveMethod = () => {
 
 const isPicture = (mime) => _.contains(['image/gif', 'image/jpeg', 'image/png'], mime);
 
+const getFileNameByPath = (path) => ('/' === path.slice(-1)) ? path.split('/').splice(-2, 1) : path.split('/').pop();
+
+const cpFileFromDisk = from => new Promise((resolve, reject) => {
+    let fileName = getFileNameByPath(from).replace('_%d', '_0');
+    let folder = s(fileName.replace('_%d', '').split('.')[0]).clean();
+
+    fs.exists(`${project.path}${folder}`, (exist) => {
+        if (exist) {
+            let nbr = 0;
+
+            fs.readdirSync(project.path).filter((el) => {
+                if (
+                    fs.statSync(path.join(project.path, el)).isDirectory()
+                    && new RegExp(`^(_([0-9]+))${folder}$`).test(el)
+                ) {
+                    nbr+=1;
+                }
+            });
+
+            folder = `_ ${nbr}${folder}`;
+        }
+
+        fs.mkdir(`${project.path}${folder}`, () => {
+            const to = `${project.path}${folder}/_0${fileName}`;
+
+            fs.copy(from, to, {replace: false}, (err) => {
+                if (err) {
+                    reject(err);
+                }
+
+                resolve(to);
+            });
+        });
+    });
+});
+
+const uploadMethod = (event) => {
+    event.preventDefault();
+
+    const element = event.currentTarget;
+    const files = ('undefined' !== typeof event.dataTransfer) ? event.dataTransfer.files : element.files;
+
+    _.each(files, (file) => {
+        if (!isPicture(file['type'])) {
+            notify('Erreur de type mime', 'error');
+        } else {
+            cpFileFromDisk(file.path)
+                .then((to) => {
+                    // const picture = new Picture(to);
+                    // picture.identify();
+                    // project.pictures.push(picture);
+                    // project.rank.push(picture.id);
+                    notify(messages.success.ok, 'success');
+                })
+                .catch(err => notify(err.toString(), 'error'));
+        }
+    });
+
+    uploadFileButton.value = null;
+};
+
+
 const startDragMethod = () => {};
 const loadPictureMethod = () => {};
 const loadPreviewMethod = () => {};
@@ -147,7 +210,6 @@ const fusionLoadMethod = () => {};
 const makeFusionMethod = () => {};
 const ratioMethod = () => {};
 const sizeMethod = () => {};
-const uploadMethod = () => {};
 const toogleDragResizeMethod = () => {};
 const stopDragMethod = () => {};
 const buildMethod = () => {};
