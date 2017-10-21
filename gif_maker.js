@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('fs.extra');
 const swal = require('sweetalert');
 const _ = require('underscore');
 const messages = require('./message.fr.json');
@@ -81,7 +81,7 @@ const createProjectMethod = () => {
         }
 
         fs.mkdir(path, () => {
-            project = new Project(this.baseOutputPath, name);
+            project = new Project(baseOutputPath, name);
             createButton.className = 'hidden';
             deleteProjectButton.className = '';
             notify(messages.success.ok, 'success');
@@ -90,7 +90,29 @@ const createProjectMethod = () => {
     });
 };
 
-const deleteProjectMethod = () => {};
+const deleteProjectMethod = () => {
+    const path = project.path;
+
+    fs.exists(path, (exist) => {
+        if (!exist) {
+            notify(messages.error.unknown_project, 'error');
+            return;
+        }
+
+        fs.rmrf(path, (err) => {
+            if (err) {
+                notify(err.toString(), 'error');
+                return;
+            }
+
+            project = null;
+            createButton.className = '';
+            deleteProjectButton.className = 'hidden';
+            notify(messages.success.ok, 'success');
+        });
+    });
+};
+
 const loadPictureMethod = () => {};
 const loadPreviewMethod = () => {};
 const editPictureMethod = () => {};

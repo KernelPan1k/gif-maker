@@ -1,6 +1,7 @@
 {
   "error": {
-    "project_exist": "Un projet du même nom existe déjà"
+    "project_exist": "Un projet du même nom existe déjà",
+    "unknown_project": "Le Projet est introuvable"
   },
   "success": {
     "ok": "ok"
