@@ -6,6 +6,8 @@ const messages = require('./message.fr.json');
 const s = require('underscore.string');
 const gui = require('nw.gui');
 const win = gui.Window.get();
+const im = require('imagemagick');
+const imc = require('imagemagick-composite');
 
 const baseOutputPath = process.env.PWD + '/output/';
 let project = null;
@@ -153,7 +155,7 @@ const cpFileFromDisk = from => new Promise((resolve, reject) => {
                     fs.statSync(path.join(project.path, el)).isDirectory()
                     && new RegExp(`^(_([0-9]+))${folder}$`).test(el)
                 ) {
-                    nbr+=1;
+                    nbr += 1;
                 }
             });
 
@@ -163,7 +165,7 @@ const cpFileFromDisk = from => new Promise((resolve, reject) => {
         fs.mkdir(`${project.path}${folder}`, () => {
             const to = `${project.path}${folder}/_0${fileName}`;
 
-            fs.copy(from, to, {replace: false}, (err) => {
+            fs.copy(from, to, { replace: false }, (err) => {
                 if (err) {
                     reject(err);
                 }
@@ -186,10 +188,10 @@ const uploadMethod = (event) => {
         } else {
             cpFileFromDisk(file.path)
                 .then((to) => {
-                    // const picture = new Picture(to);
-                    // picture.identify();
-                    // project.pictures.push(picture);
-                    // project.rank.push(picture.id);
+                    const picture = new Picture(to);
+                    picture.identify();
+                    project.pictures.push(picture);
+                    project.rank.push(picture.id);
                     notify(messages.success.ok, 'success');
                 })
                 .catch(err => notify(err.toString(), 'error'));
@@ -199,20 +201,36 @@ const uploadMethod = (event) => {
     uploadFileButton.value = null;
 };
 
+const getParentDir = (path) => ('/' === path.slice(-1))
+    ? path.split('/').slice(0, -2).join('/') + '/'
+    : path.split('/').slice(0, -1).join('/') + '/';
 
-const startDragMethod = () => {};
-const loadPictureMethod = () => {};
-const loadPreviewMethod = () => {};
-const editPictureMethod = () => {};
-const duplicateMethod = () => {};
-const prepareFusionLoadMethod = () => {};
-const fusionLoadMethod = () => {};
-const makeFusionMethod = () => {};
-const ratioMethod = () => {};
-const sizeMethod = () => {};
-const toogleDragResizeMethod = () => {};
-const stopDragMethod = () => {};
-const buildMethod = () => {};
+const startDragMethod = () => {
+};
+const loadPictureMethod = () => {
+};
+const loadPreviewMethod = () => {
+};
+const editPictureMethod = () => {
+};
+const duplicateMethod = () => {
+};
+const prepareFusionLoadMethod = () => {
+};
+const fusionLoadMethod = () => {
+};
+const makeFusionMethod = () => {
+};
+const ratioMethod = () => {
+};
+const sizeMethod = () => {
+};
+const toogleDragResizeMethod = () => {
+};
+const stopDragMethod = () => {
+};
+const buildMethod = () => {
+};
 
 fixBehavior();
 
@@ -244,5 +262,50 @@ class Project {
         this.name = name;
         this.pictures = [];
         this.rank = [];
+    }
+}
+
+class Picture {
+    constructor(path) {
+        this.id = Math.random().toString(36).substr(2);
+        this.rootpath = getParentDir(path);
+        this.name = getFileNameByPath(path).replace('_0', '_%d');
+        this.path = this.rootpath + this.name;
+        this.isExplode = false;
+        this.nbr = 1;
+        this.width = null;
+        this.height = null;
+        this.format = null;
+        this.isBg = null;
+    }
+
+    identify() {
+        const path = this.getpath();
+        im.identify(path, (err, features) => {
+            if (err) {
+                throw err;
+            }
+            
+            this.width = features.width;
+            this.height = features.height;
+            this.format = features.format.toUpperCase();
+            this.isBg = this.setBg();
+        });
+    }
+
+    isGif () {
+        return 'GIF' === this.format;
+    }
+
+    setBg() {
+        if (null === this.isBg || 'undefined' === typeof this.isBg) {
+            this.isBg = ('GIF' !== this.format && !this.isExplode);
+        }
+    }
+
+    getpath(z) {
+        let n = z;
+        n = (null === n || 'undefined' === typeof n) ? 0 : n;
+        return this.path.replace('_%d', '_' + n);
     }
 }
