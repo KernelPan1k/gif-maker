@@ -435,3 +435,62 @@ class Picture {
         return this.path.replace('_%d', '_' + n);
     }
 }
+
+class Transformer {
+    constructor(picture, bgList, left, top, width, height) {
+        this.picture = picture;
+        this.bgList = bgList;
+        this.left = left;
+        this.top = top;
+        this.width = width;
+        this.height = height;
+        this.tmp = null;
+    }
+
+    duplicate(missing) {
+        cpDuplicate(this.tmp.getpath(), missing, (missing) => {
+            this.tmp.nbr += 1;
+            if (0 < missing) {
+                return this.duplicate(missing);
+            } else {
+                const img = project.getPictureById(this.tmp.id);
+                img.nbr = this.tmp.nbr;
+                this.tmp = null;
+                return this.fusion();
+            }
+        });
+    }
+
+    fusion() {
+        const bgList = this.bgList;
+        const nbrGif = this.picture.nbr;
+        const bgS = [];
+        let nbrBg = 0;
+
+        for (let b in bgList) {
+            if (bgList.hasOwnProperty(b)) {
+                const bg = project.getPictureById(bgList[b]);
+                bgS.push(bg);
+                nbrBg = Math.max(nbrBg, bg.nbr);
+            }
+        }
+        if (nbrBg > nbrGif) {
+            this.tmp = this.picture;
+            return this.duplicate(nbrBg - nbrGif);
+        }
+        for (let b in bgS) {
+            if (bgS.hasOwnProperty(b)) {
+                const current = bgS[b];
+
+                if (nbrGif > current.nbr) {
+                    this.tmp = current;
+                    return this.duplicate(nbrBg - current.nbr);
+                }
+            }
+        }
+
+        this.bgList = bgS;
+        const factory = new Factory(this.picture);
+        factory.append(this);
+    }
+}
