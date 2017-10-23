@@ -290,6 +290,43 @@ const editPictureMethod = () => {
 };
 const duplicateMethod = () => {
 };
+
+const cpDuplicateMethod = (from, missing, callback) => {
+    let fileName = getFileNameByPath(from);
+    const folder = getFileNameByPath(getParentDir(from));
+    fileName = fileName.replace('_%d', '_0');
+
+    let to = null;
+    let that = this;
+    let nbr = 0;
+
+    fs.exists(project.path + folder, (exist) => {
+        if (exist) {
+
+            fileName = fileName.replace('_0', '');
+
+            fs.readdirSync(project.path + folder).filter((el) => {
+                if (
+                    fs.statSync(path.join(project.path + folder, el)).isFile()
+                    && new RegExp('^(_([0-9]+))' + fileName + '$').test(el)
+                ) {
+                    nbr +=1;
+                }
+            });
+        }
+
+        to = that.project.path + folder + '/' + '_' + nbr + fileName;
+
+        fs.copy(from, to, function (err) {
+            if (err) {
+                throw err;
+            }
+
+            return callback ? callback(missing - 1) : true;
+        });
+    });
+};
+
 const prepareFusionLoadMethod = () => {
 };
 const fusionLoadMethod = () => {
@@ -448,16 +485,17 @@ class Transformer {
     }
 
     duplicate(missing) {
-        cpDuplicate(this.tmp.getpath(), missing, (missing) => {
+        cpDuplicateMethod(this.tmp.getpath(), missing, (missing) => {
             this.tmp.nbr += 1;
+
             if (0 < missing) {
                 return this.duplicate(missing);
-            } else {
-                const img = project.getPictureById(this.tmp.id);
-                img.nbr = this.tmp.nbr;
-                this.tmp = null;
-                return this.fusion();
             }
+
+            const img = project.getPictureById(this.tmp.id);
+            img.nbr = this.tmp.nbr;
+            this.tmp = null;
+            return this.fusion();
         });
     }
 
