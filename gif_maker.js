@@ -205,8 +205,83 @@ const getParentDir = (path) => ('/' === path.slice(-1))
     ? path.split('/').slice(0, -2).join('/') + '/'
     : path.split('/').slice(0, -1).join('/') + '/';
 
-const startDragMethod = () => {
+const moveDragMethod = (event) => {
+    const element = event.target;
+    const offsetX = parseInt(element.getAttribute('data-offset-x'));
+    const offsetY = parseInt(element.getAttribute('data-offset-y'));
+    const coordX = parseInt(element.getAttribute('data-coord-x'));
+    const coordY = parseInt(element.getAttribute('data-coord-y'));
+
+    switch (element.getAttribute('data-action')) {
+    case 'drag':
+        element.style.left = coordX + event.clientX - offsetX + 'px';
+        element.style.top = coordY + event.clientY - offsetY + 'px';
+        return false;
+    case 'resize':
+        pictureFusion.style.width = (parseInt(
+            element.getAttribute('data-start-width')
+        ) + event.clientX - offsetX) + 'px';
+        pictureFusion.style.height = (parseInt(
+            element.getAttribute('data-start-height')
+        ) + event.clientY - offsetY) + 'px';
+        break;
+    default:
+        break;
+    }
 };
+
+const startDragMethod = (event) => {
+    event.preventDefault();
+
+    const offsetX = event.clientX;
+    const offsetY = event.clientY;
+    const element = event.currentTarget;
+
+    switch (element.className) {
+    case 'drag':
+        if (!element.style.left) {
+            element.style.left = '10px';
+        }
+        if (!element.style.top) {
+            element.style.top = '10px';
+        }
+
+        pictureFusion.setAttribute('data-coord-x', this.style.left.toString());
+        pictureFusion.setAttribute('data-coord-y', this.style.top.toString());
+        pictureFusion.setAttribute('data-offset-x', offsetX.toString());
+        pictureFusion.setAttribute('data-offset-y', offsetY.toString());
+        pictureFusion.setAttribute('data-action', 'drag');
+        fusionContainer.addEventListener('mousemove', moveDragMethod, false);
+        return false;
+    case 'resize':
+        pictureFusion.setAttribute('data-offset-x', offsetX.toString());
+        pictureFusion.setAttribute('data-offset-y', offsetY.toString());
+        pictureFusion.setAttribute('data-start-width', parseInt(
+            document.defaultView.getComputedStyle(pictureFusion, null).width, 10,
+        ).toString());
+        pictureFusion.setAttribute('data-start-height', parseInt(
+            document.defaultView.getComputedStyle(pictureFusion, null).height, 10,
+        ).toString());
+        pictureFusion.setAttribute('data-action', 'resize');
+        fusionContainer.addEventListener('mousemove', moveDragMethod, false);
+        break;
+    default:
+        return false;
+    }
+};
+
+const stopDragMethod = () => {
+    pictureFusion.setAttribute('data-coord-x', pictureFusion.style.left.toString());
+    pictureFusion.setAttribute('data-coord-y', pictureFusion.style.top.toString());
+    pictureFusion.setAttribute('data-action', '');
+};
+
+const toogleDragResizeMethod = (event) => {
+    const element = event.currentTarget;
+    element.className = 'drag' === element.className ? 'resize' : 'drag';
+};
+
+
 const loadPictureMethod = () => {
 };
 const loadPreviewMethod = () => {
@@ -225,10 +300,7 @@ const ratioMethod = () => {
 };
 const sizeMethod = () => {
 };
-const toogleDragResizeMethod = () => {
-};
-const stopDragMethod = () => {
-};
+
 const buildMethod = () => {
 };
 
@@ -285,7 +357,7 @@ class Picture {
             if (err) {
                 throw err;
             }
-            
+
             this.width = features.width;
             this.height = features.height;
             this.format = features.format.toUpperCase();
