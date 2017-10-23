@@ -295,7 +295,16 @@ const prepareFusionLoadMethod = () => {
 const fusionLoadMethod = () => {
 };
 const makeFusionMethod = () => {
+    const picture = project.getPictureById(fusionContainer.getAttribute('data-picture'));
+    const bgList = fusionContainer.getAttribute('data-bg').split(',');
+    const left = pictureFusion.style.left;
+    const top = pictureFusion.style.top;
+    const width = pictureFusion.offsetWidth;
+    const height = pictureFusion.offsetHeight;
+    const transformer = new Transformer(picture, bgList, left, top, width, height);
+    transformer.fusion();
 };
+
 const ratioMethod = () => {
 };
 const sizeMethod = () => {
@@ -303,6 +312,8 @@ const sizeMethod = () => {
 
 const buildMethod = () => {
 };
+
+const makeId = () => Math.random().toString(36).substr(2);
 
 fixBehavior();
 
@@ -335,11 +346,54 @@ class Project {
         this.pictures = [];
         this.rank = [];
     }
+
+    getPictureById(id) {
+        const pictures = this.pictures;
+
+        for (let p in pictures) {
+            if (pictures.hasOwnProperty(p)) {
+                if (pictures[p].id === id) {
+                    return pictures[p];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    removePicture(id) {
+        let pictures = this.pictures;
+
+        for (let i = 0, l = pictures.length; i < l; i++) {
+            if (pictures[i].id === id) {
+                this.pictures.splice(i, 1);
+                this.rank.splice(this.rank.indexOf(id), 1);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    clonePicture(picture) {
+        if (!(picture instanceof Picture)) {
+            throw 'picture is null';
+        }
+
+        const copy = _.clone(picture);
+        copy.id = makeId();
+
+        this.pictures.push(copy);
+        this.rank.push(copy.id);
+
+        return copy;
+    }
 }
 
 class Picture {
     constructor(path) {
-        this.id = Math.random().toString(36).substr(2);
+        this.id = makeId();
         this.rootpath = getParentDir(path);
         this.name = getFileNameByPath(path).replace('_0', '_%d');
         this.path = this.rootpath + this.name;
