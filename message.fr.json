@@ -1,10 +1,19 @@
 {
   "error": {
     "project_exist": "Un projet du même nom existe déjà",
-    "unknown_project": "Le Projet est introuvable"
+    "unknown_project": "Le Projet est introuvable",
+    "any_picture": "Aucune image pour ce projet",
+    "type_mime": "Erreur de type mime",
+    "gif_decompose": "Ce gif n'est pas décomposé",
+    "any_bg": "Aucun background enregistré",
+    "any_bg_selected": "Vous devez sélectionner des backgrounds"
   },
   "success": {
-    "ok": "ok"
+    "ok": "ok",
+    "remove_picture": "Image supprimée avec succès",
+    "bg_resize": "Tous les backgrounds ont été redimensionnés",
+    "picture_resize": "L'image a été redimensionée",
+    "gif_decompose": "Le gif a été décomposé"
   },
   "alert_title": {
     "success": "Bravo",
@@ -13,6 +22,7 @@
     "confirmation": "Confirmation",
     "message": "Message"
   },
+  "confirm_remove": "Etes-vous certain de vouloir supprimer cette image ?",
   "button": {
     "confirm": "Confirmer",
     "cancel": "Annuler"
@@ -20,5 +30,9 @@
   "drag": {
     "over": "Déposez le fichier",
     "leave": "Glisser le fichier ou ..."
+  },
+  "text": {
+    "picture_bg": "l'image est un background",
+    "picture_not_bg": "l'image n'est pas un background"
   }
 }
