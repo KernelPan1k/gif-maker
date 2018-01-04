@@ -1,757 +1,697 @@
-/** IMPORT */
-const gui = require('nw.gui');
-const win = gui.Window.get();
-const path = require('path');
-const fs = require('fs.extra');
-const im = require('imagemagick');
-const _ = require('underscore');
-const swal = require('sweetalert');
-const imc = require('imagemagick-composite');
-const slugify = require('underscore.string/slugify');
-const messages = require('./message.fr.json');
+(function () {
 
-const baseOutputPath = `${process.env.PWD}/output/`;
-let project = null;
+    /*********************************************************
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     * ===================> MMGifMaker <==================== *
+     * * * * * * * * @author Mickael Mathieu * * * * * * * * *
+     ********************************************************/
 
-const uploadPage = document.querySelector('#uploadPage');
-const createButton = document.querySelector('#createProjectButton');
-const deleteProjectButton = document.querySelector('#deleteProjectButton');
-const uploadFileButton = document.querySelector('#uploadFileButton');
-const submitEditButton = document.querySelector('#submitEditButton');
-const duplicateButton = document.querySelector('#duplicateButton');
-const fusionButton = document.querySelector('#fusionButton');
-const loadFusionButton = document.querySelector('#loadFusionButton');
-const makeFusionButton = document.querySelector('#makeFusionButton');
-const projectNameInput = document.querySelector('#projectNameInput');
-const editWidthInput = document.querySelector('#editWidthInput');
-const editHeightInput = document.querySelector('#editHeightInput');
-const pictureIdHidden = document.querySelector('#pictureIdHidden');
-const ratioCheckbox = document.querySelector('#ratioCheckbox');
-const useAtBgCheckbox = document.querySelector('#useAtBgCheckbox');
-const explodeGifCheckbox = document.querySelector('#explodeGifCheckbox');
-const updatePicturePageLink = document.querySelector('#updatePicturePageLink');
-const quitLink = document.querySelector('#quitLink');
-const updatePreviewPageLink = document.querySelector('#updatePreviewPageLink');
-const pictureTable = document.querySelector('#pictureTable');
-const fusionContainer = document.querySelector('#fusionContainer');
-const pictureFusion = document.querySelector('#pictureFusion');
-const previewPicture = document.querySelector('#previewPicture');
-let editPictureCollectionLink = document.querySelectorAll('.editPictureCollectionLink');
-let deletePictureCollectionLink = document.querySelectorAll('.deletePictureCollectionLink');
-let usePictureCollectionLink = document.querySelectorAll('.usePictureCollectionLink');
+    "use strict";
 
-const notify = (text, type) => new Promise((resolve) => {
-    let title =
-        ('success' === type)
-            ? messages.alert_title.success
-            : ('warning' === type)
-                ? messages.alert_title.warning
-                : ('error' === type)
-                    ? messages.alert_title.error
-                    : ('confirm' === type)
-                        ? messages.alert_title.confirmation
-                        : messages.alert_title.message;
+    /** IMPORT */
+    var gui = require('nw.gui');
+    var win = gui.Window.get();
+    var fs = require('fs.extra');
+    var path = require('path');
+    var im = require('imagemagick');
+    var imc = require("imagemagick-composite");
+    var mm = null;
 
-    if ('confirm' === type) {
-        swal({
-            title: title,
-            text: text,
-            type: 'info',
-            showCancelButton: true,
-            confirmButtonText: messages.button.confirm,
-            cancelButtonText: messages.button.cancel,
-            closeOnConfirm: true,
-            closeOnCancel: true,
-        }, (isConfirm) => {
-            resolve(isConfirm);
-        });
-    }
-
-    swal(title, text, type);
-    resolve();
-});
-
-const scroll = (target) => window.scrollTo(0, target.offsetTop);
-
-const createProject = () => {
-    let name = slugify(projectNameInput.value);
-    let path = `${baseOutputPath}${name}`;
-
-    fs.exists(path, (exist) => {
-        if (exist) {
-            notify(messages.error.project_exist, 'error');
-            return;
-        }
-
-        fs.mkdir(path, () => {
-            project = new Project(baseOutputPath, name);
-            createButton.className = 'hidden';
-            deleteProjectButton.className = '';
-            scroll(uploadPage);
-            notify(messages.success.ok, 'success');
-        });
-    });
-};
-
-const deleteProject = () => {
-    const path = project.path;
-
-    fs.exists(path, (exist) => {
-        if (!exist) {
-            notify(messages.error.unknown_project, 'error');
-            return;
-        }
-
-        fs.rmrf(path, (err) => {
-            if (err) {
-                notify(err.toString(), 'error');
-                return;
+    var MMGifMaker = function () {
+        this._baseOutputPath = process.env.PWD + '/output/';
+        this.project = null;
+        // page
+        this._uploadPage = document.querySelector('#uploadPage');
+        // button
+        this._createButton = document.querySelector('#createProjectButton');
+        this._deleteProjectButton = document.querySelector('#deleteProjectButton');
+        this._uploadFileButton = document.querySelector('#uploadFileButton');
+        this._submitEditButton = document.querySelector('#submitEditButton');
+        this._duplicateButton = document.querySelector('#duplicateButton');
+        this._fusionButton = document.querySelector('#fusionButton');
+        this._loadFusionButton = document.querySelector('#loadFusionButton');
+        this._makeFusionButton = document.querySelector('#makeFusionButton');
+        // Input text
+        this._projectNameInput = document.querySelector('#projectNameInput');
+        this._editWidthInput = document.querySelector('#editWidthInput');
+        this._editHeightInput = document.querySelector('#editHeightInput');
+        // Input others
+        this._pictureIdHidden = document.querySelector('#pictureIdHidden');
+        this._ratioCheckbox = document.querySelector('#ratioCheckbox');
+        this._useAtBgCheckbox = document.querySelector('#useAtBgCheckbox');
+        this._explodeGifCheckbox = document.querySelector('#explodeGifCheckbox');
+        // Link
+        this._updatePicturePageLink = document.querySelector('#updatePicturePageLink');
+        this._quitLink = document.querySelector('#quitLink');
+        this._editPictureCollectionLink = document.querySelectorAll('.editPictureCollectionLink');
+        this._deletePictureCollectionLink = document.querySelectorAll('.deletePictureCollectionLink');
+        this._usePictureCollectionLink = document.querySelectorAll('.usePictureCollectionLink');
+        this._updatePreviewPageLink = document.querySelector('#updatePreviewPageLink');
+        // Block
+        this._pictureTable = document.querySelector('#pictureTable');
+        this._fusionContainer = document.querySelector('#fusionContainer');
+        this._pictureFusion = document.querySelector('#pictureFusion');
+        this._previewPicture = document.querySelector('#previewPicture');
+        this.fixBehavior = function () {
+            window.ondragover = window.ondrop = function (e) {
+                e.preventDefault();
+                return false;
+            };
+        };
+        this.bindEvent = function () {
+            this._createButton.addEventListener('click', this.createProject_, false);
+            this._deleteProjectButton.addEventListener('click', this.deleteProject_, false);
+            this._updatePicturePageLink.addEventListener('click', this.loadPicture_, false);
+            this._updatePreviewPageLink.addEventListener('click', this.loadPreview_, false);
+            this._submitEditButton.addEventListener('click', this.editPicture_, false);
+            this._duplicateButton.addEventListener('click', this.duplicate_, false);
+            this._fusionButton.addEventListener('click', this.prepareFusionLoad_, false);
+            this._loadFusionButton.addEventListener('click', this.fusionLoad_, false);
+            this._makeFusionButton.addEventListener('click', this.makeFusion_, false);
+            this._ratioCheckbox.addEventListener('click', this.ratio_, false);
+            this._editHeightInput.addEventListener('blur', this.size_, false);
+            this._editWidthInput.addEventListener('blur', this.size_, false);
+            this._uploadPage.addEventListener('drop', this.upload_, false);
+            this._uploadFileButton.addEventListener('change', this.upload_, false);
+            this._uploadPage.addEventListener('dragover', this.dragOver_, false);
+            this._uploadPage.addEventListener('dragleave', this.dragLeave_, false);
+            this._pictureFusion.addEventListener('mousedown', this.startDrag_, false);
+            this._fusionContainer.addEventListener('mouseup', this.stopDrag_, false);
+            this._pictureFusion.addEventListener('dblclick', this.toogleDragResize_, false);
+            this._quitLink.addEventListener('click', this.quit_, false);
+            document.querySelector('#buildButton').addEventListener('click', this.build_, false);
+        };
+        this.initialize = function () {
+            this.fixBehavior();
+            this.bindEvent();
+        };
+        /** Create a new project */
+        this.createProject_ = function () {
+            var name = mm.slugify(mm._projectNameInput.value);
+            var path = mm._baseOutputPath + name;
+            fs.exists(path, function (exist) {
+                if (exist) return mm.notify("Un projet du mÃªme nom existe dÃ©jÃ ", 'error');
+                fs.mkdir(path, function () {
+                    mm.project = new Project(mm._baseOutputPath, name);
+                    mm._createButton.className = 'hidden';
+                    mm._deleteProjectButton.className = '';
+                    mm.scroll(mm._uploadPage);
+                    return mm.notify("ok", 'success');
+                });
+            });
+        };
+        /** Delete current project */
+        this.deleteProject_ = function () {
+            var path = mm.project.path;
+            fs.exists(path, function (exist) {
+                if (!exist) return mm.notify("Projet introuvable", 'error');
+                fs.rmrf(path, function (err) {
+                    if (err) throw  err;
+                    mm.project = null;
+                    mm._createButton.className = '';
+                    mm._deleteProjectButton.className = 'hidden';
+                    return mm.notify("ok", 'success');
+                });
+            });
+        };
+        /** drag enter event */
+        this.dragOver_ = function () {
+            document.querySelector('#uploadPageMessage').innerHTML = "DÃ©posez le fichier";
+            return false;
+        };
+        /** drag leave event */
+        this.dragLeave_ = function () {
+            document.querySelector('#uploadPageMessage').innerHTML = "Glisser le fichier ou ...";
+            return false;
+        };
+        /** Upload handler by drop or classical method  */
+        this.upload_ = function (e) {
+            e.preventDefault();
+            var el = e.target;
+            var files = ('undefined' !== typeof e.dataTransfer) ? e.dataTransfer.files : el.files;
+            for (var i = 0, l = files.length; i < l; i++) {
+                if (mm.isPicture(files[i]["type"])) {
+                    mm.cpFileFromDisk(files[i].path, function (path) {
+                        var picture = new Picture(path);
+                        picture.identify();
+                        mm.project.pictures.push(picture);
+                        mm.project.rank.push(picture.id);
+                        mm.notify("ok", 'success');
+                    });
+                }
+                else mm.notify('Erreur de type mime', 'error');
             }
-
-            project = null;
-            createButton.className = '';
-            deleteProjectButton.className = 'hidden';
-            notify(messages.success.ok, 'success');
-        });
-    });
-};
-
-const dragOver = () => {
-    document.querySelector('#uploadPageMessage').innerHTML = messages.drag.over;
-    return false;
-};
-
-const dragLeave = () => {
-    document.querySelector('#uploadPageMessage').innerHTML = messages.drag.leave;
-    return false;
-};
-
-const isPicture = mime => _.contains(['image/jpeg', 'image/png', 'image/gif'], mime);
-
-const getFileNameByPath = path => ('/' === path.slice(-1))
-    ? path.split('/').splice(-2, 1)
-    : path.split('/').pop();
-
-const cpFileFromDisk = (from, callback) => {
-    let fileName = getFileNameByPath(from);
-    let folder = slugify(fileName.replace('_%d', '').split('.')[0]);
-
-    fileName = fileName.replace('_%d', '_0');
-
-    fs.exists(`${project.path}${folder}`, (exist) => {
-        if (exist) {
-            let nbr = 0;
-
-            fs.readdirSync(project.path).filter((el) => {
-                if (
-                    fs.statSync(path.join(project.path, el)).isDirectory()
-                    && new RegExp(`^(_([0-9]+))${folder}$`).test(el)
-                ) {
-                    nbr += 1;
-                }
-            });
-
-            folder = `_${nbr}${folder}`;
-        }
-
-        fs.mkdir(`${project.path}${folder}`, () => {
-            const to = `${project.path}${folder}/_0${fileName}`;
-
-            fs.copy(from, to, { replace: false }, (err) => {
-                if (err) {
-                    notify(err.toString(), 'error');
-                    return;
-                }
-
-                callback ? callback(to) : true;
-            });
-        });
-    });
-};
-
-const upload = (event) => {
-    event.preventDefault();
-
-    const element = event.target;
-    const files = ('undefined' !== typeof event.dataTransfer) ? event.dataTransfer.files : element.files;
-
-    _.each(files, (file) => {
-        if (isPicture(file['type'])) {
-            cpFileFromDisk(file.path, (path) => {
-                const picture = new Picture(path);
-                picture.identify();
-                project.pictures.push(picture);
-                project.rank.push(picture.id);
-                notify(messages.success.ok, 'success');
-            });
-        }
-        else {
-            notify(messages.error.type_mime, 'error');
-        }
-    });
-
-    uploadFileButton.value = null;
-};
-
-const dynamicEvent = () => {
-    editPictureCollectionLink = document.querySelectorAll('.editPictureCollectionLink');
-    deletePictureCollectionLink = document.querySelectorAll('.deletePictureCollectionLink');
-    usePictureCollectionLink = document.querySelectorAll('.usePictureCollectionLink');
-
-    for (let i = 0, l = editPictureCollectionLink.length; i < l; i++) {
-        editPictureCollectionLink[i].addEventListener('click', loadEditPicture, false);
-        deletePictureCollectionLink[i].addEventListener('click', loadDeletePicture, false);
-        usePictureCollectionLink[i].addEventListener('click', usePicture, false);
-    }
-
-    let sortable = new Sortable(pictureTable, {
-        handle: '.sortable',
-        animation: 150,
-        onUpdate: () => {
-            const row = document.querySelectorAll('.pictureEditRow');
-            project.rank = [];
-            _.each(row, r => project.rank.push(r.getAttribute('data-image')));
-        },
-    });
-};
-
-const loadPicture = () => {
-    if (null === project) {
-        return notify(messages.error.unknown_project, 'warning');
-    }
-
-    pictureTable.innerHTML = '';
-
-    if (_.isEmpty(project.pictures)) {
-        return notify(messages.error.any_picture, 'warning');
-    }
-
-    const template = document.querySelector('#pictureTemplate').innerHTML;
-    const ranks = project.rank;
-
-    _.each(ranks, (rank) => {
-        const picture = project.getPictureById(rank);
-        picture.setBg();
-        pictureTable.innerHTML +=
-            template
-                .replace('%src%', 'output/' + path.relative(baseOutputPath, `${picture.getPath()}?d=${Date.now()}`))
-                .replace('%info%', `${picture.nbr} images`)
-                .replace(new RegExp('%data%', 'g'), picture.id);
-    });
-
-    dynamicEvent();
-};
-
-const loadEditPicture = (event) => {
-    document.querySelector('#jpg').className = 'hidden';
-    document.querySelector('#gif').className = 'hidden';
-
-    const element = event.currentTarget;
-    const id = element.getAttribute('data-image');
-    const picture = project.getPictureById(id);
-
-    pictureIdHidden.value = id;
-    editWidthInput.value = picture.width;
-    editHeightInput.value = picture.height;
-
-    switch (picture.format) {
-    case 'JPG':
-    case 'JPEG':
-    case 'PNG':
-        if (!picture.isExplode) {
-            document.querySelector('#jpg').className = '';
-            useAtBgCheckbox.checked = !picture.isBg ? true : picture.isBg;
-        }
-        break;
-    case 'GIF':
-        document.querySelector('#gif').className = '';
-        explodeGifCheckbox.checked = picture.isExplode;
-
-        if (picture.isExplode) {
-            explodeGifCheckbox.setAttribute('disabled', 'disabled');
-        } else {
-            explodeGifCheckbox.removeAttribute('disabled');
-        }
-        break;
-    }
-
-    scroll(document.querySelector('#editPage'));
-};
-
-const loadDeletePicture = (event) => {
-    const element = event.currentTarget;
-    const picture = project.getPictureById(element.getAttribute('data-image'));
-
-    notify(messages.confirm_remove, 'confirm')
-        .then((isConfirm) => {
-            if (isConfirm) {
-                fs.rmrf(picture.rootpath, (err) => {
-                    if (err) {
-                        notify(err.toString(), 'error');
-                        return;
+            mm._uploadFileButton.value = null;
+        };
+        /** Event for dynamical tags */
+        this.dynamicEvent = function () {
+            this._editPictureCollectionLink = document.querySelectorAll('.editPictureCollectionLink');
+            this._deletePictureCollectionLink = document.querySelectorAll('.deletePictureCollectionLink');
+            this._usePictureCollectionLink = document.querySelectorAll('.usePictureCollectionLink');
+            for (var i = 0, l = this._editPictureCollectionLink.length; i < l; i++) {
+                this._editPictureCollectionLink[i].addEventListener('click', this.loadEditPicture_, false);
+                this._deletePictureCollectionLink[i].addEventListener('click', this.loadDeletePicture_, false);
+                this._usePictureCollectionLink[i].addEventListener('click', this.usePicture_, false);
+            }
+            var that = this;
+            var sortable = new Sortable(this._pictureTable, {
+                handle: '.sortable',
+                animation: 150,
+                onUpdate: function () {
+                    var row = document.querySelectorAll('.pictureEditRow');
+                    that.project.rank = [];
+                    for (var r = 0, l = row.length; r < l; r++) {
+                        that.project.rank.push(row[r].getAttribute('data-image'));
                     }
+                }
+            });
+        };
+        /** Load picture */
+        this.loadPicture_ = function () {
+            if (null === mm.project) {
+                return mm.notify("Vous devez crÃ©er un projet", "warning");
+            }
+            mm._pictureTable.innerHTML = '';
+            if (0 === mm.project.pictures.length) {
+                return mm.notify("Aucune image pour ce projet", "warning");
+            }
+            var template = document.querySelector("#pictureTemplate").innerHTML;
+            var ranks = mm.project.rank;
+            for (var r in ranks) {
+                if (ranks.hasOwnProperty(r)) {
+                    var picture = mm.project.getPictureById(ranks[r]);
+                    picture.setBg();
+                    mm._pictureTable.innerHTML +=
+                        template
+                            .replace("%src%", 'output/' + path.relative(mm._baseOutputPath, picture.getpath() + '?d=' + Date.now()))
+                            .replace("%info%", picture.nbr + " images")
+                            .replace(new RegExp('%data%', 'g'), picture.id);
+                }
+            }
+            mm.dynamicEvent();
+        };
+        /** hydrate form in picture edit view */
+        this.loadEditPicture_ = function () {
+            document.querySelector('#jpg').className = 'hidden';
+            document.querySelector('#gif').className = 'hidden';
+            var id = this.getAttribute('data-image');
+            var picture = mm.project.getPictureById(id);
+            mm._pictureIdHidden.value = id;
+            mm._editWidthInput.value = picture.width;
+            mm._editHeightInput.value = picture.height;
+            switch (picture.format) {
+                case 'JPG':
+                case 'JPEG':
+                case 'PNG':
+                    if (!picture.isExplode) {
+                        document.querySelector('#jpg').className = '';
+                        mm._useAtBgCheckbox.checked = (null === picture.isBg) ? true : picture.isBg;
+                    }
+                    break;
+                case 'GIF':
+                    document.querySelector('#gif').className = '';
+                    mm._explodeGifCheckbox.checked = picture.isExplode;
+                    if (picture.isExplode) mm._explodeGifCheckbox.setAttribute('disabled', 'disabled');
+                    else mm._explodeGifCheckbox.removeAttribute('disabled');
+                    break;
+            }
+            return mm.scroll(document.querySelector('#editPage'));
+        };
+        /** Event when call delete picture */
+        this.loadDeletePicture_ = function () {
+            var picture = mm.project.getPictureById(this.getAttribute('data-image'));
+            mm.notify("Etes-vous certain de vouloir supprimer cette image ?", 'confirm', picture, function (picture) {
+                fs.rmrf(picture.rootpath, function (err) {
+                    if (err) throw err;
+                    mm.project.removePicture(picture.id);
+                    mm.loadPicture_();
+                    mm.notify("Image supprimÃ©e avec succÃ¨s", 'success');
+                });
+            });
+        };
+        /** Prepare usePicture view */
+        this.usePicture_ = function () {
+            mm._loadFusionButton.className = 'hidden';
+            document.querySelector('#containerUseBackground').innerHTML = '';
+            var id = this.getAttribute('data-image');
+            var picture = mm.project.getPictureById(id);
+            var parent = mm._fusionButton.parentNode;
+            parent.className = 'hidden';
+            mm._duplicateButton.setAttribute('data-use', id);
+            if (!picture.isBg) {
+                if (picture.isGif() && !picture.isExplode) {
+                    mm.notify("Ce gif n'est pas dÃ©composÃ©", 'warning');
+                } else {
+                    mm._fusionButton.setAttribute('data-use', id);
+                    parent.className = '';
+                }
+            }
+            return mm.scroll(document.querySelector('#usePicturePage'));
+        };
+        /** Edit picture */
+        this.editPicture_ = function () {
+            var message = [];
+            var picture = mm.project.getPictureById(mm._pictureIdHidden.value);
+            var factory = new Factory(picture);
+            var callback = false;
+            var decompose = picture.isGif() && mm._explodeGifCheckbox.checked && !picture.isExplode;
+            if (!picture.isGif() && !picture.isExplode) {
+                picture.isBg = mm._useAtBgCheckbox.checked;
+                var str = (picture.isBg) ? "l'image est un background" : "L'image n'est pas un background";
+                message.push(str);
+            }
+            if (mm._editWidthInput.value != picture.width || mm._editHeightInput.value != picture.height) {
+                callback = decompose;
+                if (callback) factory.resize(mm._editWidthInput.value, mm._editHeightInput.value, 0, mm);
+                else factory.resize(mm._editWidthInput.value, mm._editHeightInput.value);
+                if (picture.isBg) {
+                    var others = mm.project.pictures;
+                    for (var o in others) {
+                        if (others.hasOwnProperty(o)) {
+                            var p = others[o];
+                            if (p.isBg && p.id !== picture.id) {
+                                var f = new Factory(p);
+                                f.resize(mm._editWidthInput.value, mm._editHeightInput.value);
+                            }
+                        }
+                    }
+                    message.push("Tous les backgrounds ont Ã©tÃ© redimensionnÃ©s");
+                }
+                else message.push("L'image a Ã©tÃ© redimensionÃ©e");
+            }
+            if (decompose) {
+                mm._explodeGifCheckbox.setAttribute('disabled', 'disabled');
+                message.push("Le gif a Ã©tÃ© dÃ©composÃ©");
+                if (!callback) {
+                    factory.decompose();
+                }
+            }
+            if (0 !== message.length) {
+                mm.notify(message.join('\n'), 'success');
+            }
+        };
+        /** load picture size for use ratio */
+        this.ratio_ = function () {
+            if (this.checked) {
+                var picture = mm.project.getPictureById(mm._pictureIdHidden.value);
+                mm._editWidthInput.value = picture.width;
+                mm._editHeightInput.value = picture.height;
+                return true;
+            }
+            return null;
+        };
+        /** Keep picture ratio */
+        this.size_ = function () {
+            if (!mm._ratioCheckbox.checked) return false;
+            var picture = mm.project.getPictureById(mm._pictureIdHidden.value);
+            if (this.getAttribute('id') === mm._editWidthInput.getAttribute('id')) {
+                return mm._editHeightInput.value = Math.round((picture.height / picture.width) * mm._editWidthInput.value);
+            } else if (this.getAttribute('id') === mm._editHeightInput.getAttribute('id')) {
+                return mm._editWidthInput.value = Math.round((picture.width / picture.height) * mm._editHeightInput.value);
+            }
+            return false;
+        };
+        /** Duplicate picture */
+        this.duplicate_ = function () {
+            var picture = mm.project.getPictureById(this.getAttribute('data-use'));
+            mm.cpFolderContent(picture.path, function (to) {
+                mm.project.clonePicture(picture, to + picture.name);
+                mm.notify("ok", 'success');
+            });
+        };
+        /** prepare page fusion */
+        this.prepareFusionLoad_ = function () {
+            var picture = mm.project.getPictureById(this.getAttribute('data-use'));
+            var container = document.querySelector('#containerUseBackground');
+            container.innerHTML = '';
+            var template = document.querySelector('#backgroundTemplate').innerHTML;
+            var pictures = mm.project.pictures;
+            var hidden = 'hidden';
+            for (var p in pictures) {
+                if (pictures.hasOwnProperty(p) && pictures[p].isBg) {
+                    hidden = '';
+                    container.innerHTML +=
+                        template
+                            .replace("%src%", 'output/' + path.relative(mm._baseOutputPath, pictures[p].getpath() + '?d=' + Date.now()))
+                            .replace('%id%', pictures[p].id);
+                }
+            }
+            if ('hidden' === hidden) {
+                container.innerHTML = 'Aucun background enregistrÃ©';
+            }
+            else {
+                mm._loadFusionButton.setAttribute('data-use', picture.id);
+            }
+            mm._loadFusionButton.className = hidden;
+        };
+        /** Page drag and drop */
+        this.fusionLoad_ = function () {
+            var bgList = document.querySelectorAll('.bgList:checked');
+            var picture = mm.project.getPictureById(this.getAttribute('data-use'));
+            var bgListId = [];
+            if (0 === bgList.length) {
+                return mm.notify("Vous devez sÃ©lectionner des backgrounds", "error");
+            }
+            for (var i = 0, l = bgList.length; i < l; i++) {
+                bgListId.push(bgList[i].getAttribute('data-bg'));
+            }
+            var bgForWork = mm.project.getPictureById(bgListId[0]);
+            mm._fusionContainer.style.width = bgForWork.width + 'px';
+            mm._fusionContainer.style.height = bgForWork.height + 'px';
+            mm._fusionContainer.style.background = "url(%s) center center no-repeat".replace('%s', 'output/' + path.relative(mm._baseOutputPath, bgForWork.getpath() + '?d=' + Date.now()));
+            mm._pictureFusion.style.width = picture.width;
+            mm._pictureFusion.style.height = picture.height;
+            mm._pictureFusion.src = 'output/' + path.relative(mm._baseOutputPath, picture.getpath() + '?d=' + Date.now());
+            mm._pictureFusion.style.left = '10px';
+            mm._pictureFusion.style.top = '10px';
+            mm._fusionContainer.setAttribute('data-picture', picture.id);
+            mm._fusionContainer.setAttribute('data-picture', picture.id);
+            mm._fusionContainer.setAttribute('data-bg', bgListId.join(','));
+            mm.scroll(document.querySelector('#fusionPage'));
+        };
+        /** mousedown */
+        this.startDrag_ = function (e) {
+            e.preventDefault();
+            var offsetX = e.clientX;
+            var offsetY = e.clientY;
+            switch (this.className) {
+                case 'drag':
+                    if (!this.style.left) {
+                        this.style.left = '10px'
+                    }
+                    if (!this.style.top) {
+                        this.style.top = '10px'
+                    }
+                    mm._pictureFusion.setAttribute('data-coord-x', this.style.left.toString());
+                    mm._pictureFusion.setAttribute('data-coord-y', this.style.top.toString());
+                    mm._pictureFusion.setAttribute('data-offset-x', offsetX.toString());
+                    mm._pictureFusion.setAttribute('data-offset-y', offsetY.toString());
+                    mm._pictureFusion.setAttribute('data-action', 'drag');
+                    mm._fusionContainer.addEventListener('mousemove', mm._moveDrag, false);
+                    return false;
+                    break;
+                case 'resize':
+                    mm._pictureFusion.setAttribute('data-offset-x', offsetX.toString());
+                    mm._pictureFusion.setAttribute('data-offset-y', offsetY.toString());
+                    mm._pictureFusion.setAttribute('data-start-width', parseInt(document.defaultView.getComputedStyle(mm._pictureFusion, null).width, 10).toString());
+                    mm._pictureFusion.setAttribute('data-start-height', parseInt(document.defaultView.getComputedStyle(mm._pictureFusion, null).height, 10).toString());
+                    mm._pictureFusion.setAttribute('data-action', 'resize');
+                    mm._fusionContainer.addEventListener('mousemove', mm._moveDrag, false);
+                    break;
+                default:
+                    return false;
+                    break;
+            }
+        };
+        /** mousemove */
+        this._moveDrag = function (e) {
+            var el = e.target;
+            var offsetX = parseInt(el.getAttribute('data-offset-x'));
+            var offsetY = parseInt(el.getAttribute('data-offset-y'));
+            switch (el.getAttribute('data-action')) {
+                case 'drag':
+                    var coordX = parseInt(el.getAttribute('data-coord-x'));
+                    var coordY = parseInt(el.getAttribute('data-coord-y'));
+                    el.style.left = coordX + e.clientX - offsetX + 'px';
+                    el.style.top = coordY + e.clientY - offsetY + 'px';
+                    return false;
+                    break;
+                case 'resize':
+                    mm._pictureFusion.style.width = (parseInt(el.getAttribute('data-start-width')) + e.clientX - offsetX) + 'px';
+                    mm._pictureFusion.style.height = (parseInt(el.getAttribute('data-start-height')) + e.clientY - offsetY) + 'px';
+                    break;
+                default:
+                    return false;
+                    break;
+            }
+        };
+        /** mouseup */
+        this.stopDrag_ = function () {
+            mm._pictureFusion.setAttribute('data-coord-x', mm._pictureFusion.style.left.toString());
+            mm._pictureFusion.setAttribute('data-coord-y', mm._pictureFusion.style.top.toString());
+            mm._pictureFusion.setAttribute('data-action', '');
+        };
+        /** update class */
+        this.toogleDragResize_ = function () {
+            this.className = 'drag' === this.className ? 'resize' : 'drag';
+        };
+        this.makeFusion_ = function () {
+            var picture = mm.project.getPictureById(mm._fusionContainer.getAttribute('data-picture'));
+            var bgList = mm._fusionContainer.getAttribute('data-bg').split(',');
+            var left = mm._pictureFusion.style.left;
+            var top = mm._pictureFusion.style.top;
+            var width = mm._pictureFusion.offsetWidth;
+            var height = mm._pictureFusion.offsetHeight;
+            var transformer = new Transformer(picture, bgList, left, top, width, height);
+            transformer.fusion();
+        };
+        /** ger good ratio */
+        this.calculateAspectRatio = function (srcWidth, srcHeight, maxWidth, maxHeight, ratio) {
+            ratio = (null === ratio || 'undefined' === typeof ratio) ? Math.min(maxWidth / srcWidth, maxHeight / srcHeight) : ratio;
 
-                    project.removePicture(picture.id);
-                    loadPicture();
-                    notify(messages.success.remove_picture, 'success');
+            return {width: srcWidth * ratio, height: srcHeight * ratio, ratio: ratio};
+        };
+        this.loadPreview_ = function () {
+            var paths = [];
+            var date = Date.now();
+            var list = mm.project.rank;
+            var dimension = null;
+            var interval = null;
+            for (var l in list) {
+                if (list.hasOwnProperty(l)) {
+                    var current = mm.project.getPictureById(list[l]);
+                    for (var i = 0; i < current.nbr; i++) {
+                        paths.push('output/' + path.relative(mm._baseOutputPath, current.getpath(i) + '?d=' + date));
+                        if (current.isBg && null === dimension) {
+                            dimension = mm.calculateAspectRatio(current.width, current.height, 800, 700);
+                        }
+                    }
+                }
+            }
+            mm._previewPicture.setAttribute('src', paths[0]);
+            mm._previewPicture.style.width = dimension.width;
+            mm._previewPicture.style.height = dimension.height;
+            document.querySelector('#previewButton').addEventListener('click', function (e) {
+                var el = e.target;
+                if (null === interval) {
+                    var speed = parseInt(document.querySelector('#speedInput').value);
+                    var i = 0;
+                    el.value = "Stopper la preview";
+                    interval = setInterval(function () {
+                        mm._previewPicture.setAttribute('src', paths[i]);
+                        i = (i + 1 < paths.length) ? i + 1 : 0;
+                    }, speed);
+                } else {
+                    clearInterval(interval);
+                    interval = null;
+                    el.value = "Lancer la preview";
+                }
+            }, false);
+        };
+        this.build_ = function () {
+            var speed = parseInt(document.querySelector('#speedInput').value);
+            var list = mm.project.rank;
+            var sources = [];
+            for (var l in list) {
+                if (list.hasOwnProperty(l)) {
+                    var current = mm.project.getPictureById(list[l]);
+                    current.identify();
+                    sources.push(current.rootpath + '*');
+                }
+            }
+            var factory = new Factory(null);
+            factory.animate(speed, sources);
+        };
+        /** exit application */
+        this.quit_ = function () {
+            win.close();
+            return process.exit();
+        };
+        this.getFileNameByPath = function (path) {
+            return ('/' === path.slice(-1))
+                ? path.split('/').splice(-2, 1)
+                : path.split('/').pop();
+        };
+        this.getParentDir = function (path) {
+            return ('/' === path.slice(-1))
+                ? path.split('/').slice(0, -2).join('/') + '/'
+                : path.split('/').slice(0, -1).join('/') + '/';
+        };
+        this.cpFileFromDisk = function (from, callback) {
+            var fileName = this.getFileNameByPath(from);
+            var folder = this.slugify(fileName.replace('_%d', '').split('.')[0]);
+            fileName = fileName.replace('_%d', '_0');
+            var to = null;
+            var that = this;
+            fs.exists(this.project.path + folder, function (exist) {
+                if (exist) {
+                    var nbr = 0;
+                    fs.readdirSync(that.project.path).filter(function (el) {
+                        if (fs.statSync(path.join(that.project.path, el)).isDirectory() && new RegExp('^(\_([0-9]+))' + folder + '$').test(el)) {
+                            nbr++;
+                        }
+                    });
+                    folder = '_' + nbr + folder;
+                }
+                fs.mkdir(that.project.path + folder, function () {
+                    to = that.project.path + folder + '/' + '_0' + fileName;
+                    fs.copy(from, to, {replace: false}, function (err) {
+                        if (err) throw err;
+                        return callback ? callback(to) : true;
+                    });
+                });
+            });
+        };
+        this.cpFolderContent = function (from, callback) {
+            var fileName = this.getFileNameByPath(from);
+            var folder = this.slugify(fileName.replace('_%d', '').split('.')[0]);
+            var to = null;
+            var that = this;
+            fs.exists(this.project.path + folder, function (exist) {
+                if (exist) {
+                    var nbr = 0;
+                    fs.readdirSync(that.project.path).filter(function (el) {
+                        if (fs.statSync(path.join(that.project.path, el)).isDirectory() && new RegExp('^(\_([0-9]+))' + folder + '$').test(el)) {
+                            nbr++;
+                        }
+                    });
+                    folder = '_' + nbr + folder;
+                }
+                to = that.project.path + folder + '/';
+                fs.copyRecursive(that.getParentDir(from), to, function (err) {
+                    if (err) throw err;
+                    return callback ? callback(to) : true;
+                });
+            });
+        };
+        this.cpDuplicate = function (from, missing, callback) {
+            var fileName = this.getFileNameByPath(from);
+            var folder = this.getFileNameByPath(this.getParentDir(from));
+            fileName = fileName.replace('_%d', '_0');
+            var to = null;
+            var that = this;
+            fs.exists(this.project.path + folder, function (exist) {
+                if (exist) {
+                    var nbr = 0;
+                    fileName = fileName.replace('_0', '');
+                    fs.readdirSync(that.project.path + folder).filter(function (el) {
+                        if (fs.statSync(path.join(that.project.path + folder, el)).isFile() && new RegExp('^(\_([0-9]+))' + fileName + '$').test(el)) {
+                            nbr++;
+                        }
+                    });
+                }
+                to = that.project.path + folder + '/' + '_' + nbr + fileName;
+                fs.copy(from, to, function (err) {
+                    if (err) throw err;
+                    return callback ? callback(missing - 1) : true;
+                });
+            });
+        };
+        /** format string */
+        this.slugify = function (str) {
+            str = str.replace(/^\s+|\s+$/g, '');
+            str = str.toLowerCase();
+            var from = "Ã Ã¡Ã¤Ã¢Ã¨Ã©Ã«ÃªÃ¬Ã­Ã¯Ã®Ã²Ã³Ã¶Ã´Ã¹ÃºÃ¼Ã»Ã±Ã§Â·/_,:;";
+            var to = "aaaaeeeeiiiioooouuuunc------";
+            for (var i = 0, l = from.length; i < l; i++) {
+                str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
+            }
+            str = str
+                .replace(/[^a-z0-9 -]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+
+            return str;
+        };
+        /** Display pretty notifications */
+        this.notify = function (text, type, arg, callback) {
+            var title =
+                ('success' === type) ? 'Bravo'
+                    : ('warning' === type) ? 'Attention'
+                    : ('error' === type) ? 'Erreur'
+                    : ('confirm' === type) ? 'Confirmation'
+                    : 'Message';
+
+            if ('confirm' === type) {
+                return swal({
+                    title: title,
+                    text: text,
+                    type: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: "Confirmer",
+                    cancelButtonText: "Annuler",
+                    closeOnConfirm: true,
+                    closeOnCancel: true
+                }, function (isConfirm) {
+                    if (isConfirm) return callback ? callback(arg) : true;
                 });
             }
-        }).catch(err => notify(err.toString(), 'error'));
-};
-
-const usePicture = (event) => {
-    loadFusionButton.className = 'hidden';
-    document.querySelector('#containerUseBackground').innerHTML = '';
-
-    const element = event.currentTarget;
-    const id = element.getAttribute('data-image');
-    const picture = project.getPictureById(id);
-    const parent = fusionButton.parentNode;
-
-    parent.className = 'hidden';
-    duplicateButton.setAttribute('data-use', id);
-
-    if (!picture.isBg) {
-        if (picture.isGif() && !picture.isExplode) {
-            notify(messages.error.gif_decompose, 'warning');
-        } else {
-            fusionButton.setAttribute('data-use', id);
-            parent.className = '';
-        }
-    }
-
-    scroll(document.querySelector('#usePicturePage'));
-};
-
-const editPicture = () => {
-    const message = [];
-    const picture = project.getPictureById(pictureIdHidden.value);
-    const factory = new Factory(picture);
-    const decompose = picture.isGif() && explodeGifCheckbox.checked && !picture.isExplode;
-    let useCallback = false;
-
-    if (!picture.isGif() && !picture.isExplode) {
-        picture.isBg = useAtBgCheckbox.checked;
-        const str = (picture.isBg) ? messages.text.picture_bg : messages.text.picture_not_bg;
-        message.push(str);
-    }
-
-    if (
-        editWidthInput.value !== picture.width
-        || editHeightInput.value !== picture.height
-    ) {
-        useCallback = decompose;
-
-        if (useCallback) {
-            factory.resize(editWidthInput.value, editHeightInput.value, 0);
-        }
-        else {
-            factory.resize(editWidthInput.value, editHeightInput.value);
-        }
-
-        if (picture.isBg) {
-            const others = project.pictures;
-
-            _.each(others, (other) => {
-                if (other.isBg && other.id !== picture.id) {
-                    let f = new Factory(other);
-                    f.resize(editWidthInput.value, editHeightInput.value);
-                }
-            });
-
-            message.push(messages.success.bg_resize);
-        }
-        else {
-            message.push(messages.success.picture_resize);
-        }
-    }
-    if (decompose) {
-        explodeGifCheckbox.setAttribute('disabled', 'disabled');
-        message.push(messages.success.gif_decompose);
-
-        if (!useCallback) {
-            factory.decompose();
-        }
-    }
-
-    if (0 !== message.length) {
-        notify(message.join('\n'), 'success');
-    }
-};
-
-const ratio = (event) => {
-    if (event.currentTarget.checked) {
-        let picture = project.getPictureById(pictureIdHidden.value);
-        editWidthInput.value = picture.width;
-        editHeightInput.value = picture.height;
-    }
-};
-
-const size = (event) => {
-    if (!ratioCheckbox.checked) {
-        return false;
-    }
-
-    const element = event.currentTarget;
-    const picture = project.getPictureById(pictureIdHidden.value);
-
-    if (element.getAttribute('id') === editWidthInput.getAttribute('id')) {
-        return editHeightInput.value = Math.round((picture.height / picture.width) * editWidthInput.value);
-    } else if (element.getAttribute('id') === editHeightInput.getAttribute('id')) {
-        return editWidthInput.value = Math.round((picture.width / picture.height) * editHeightInput.value);
-    }
-};
-
-const duplicate = (event) => {
-    const picture = project.getPictureById(event.currentTarget.getAttribute('data-use'));
-
-    cpFolderContent(picture.path, (to) => {
-        project.clonePicture(picture, to + picture.name);
-        notify(messages.success.ok, 'success');
-    });
-};
-
-const prepareFusionLoad = (event) => {
-    const picture = project.getPictureById(event.currentTarget.getAttribute('data-use'));
-    const container = document.querySelector('#containerUseBackground');
-
-    container.innerHTML = '';
-
-    const template = document.querySelector('#backgroundTemplate').innerHTML;
-    const pictures = project.pictures;
-
-    let hidden = 'hidden';
-
-    _.each(pictures, (picture) => {
-        hidden = '';
-        container.innerHTML +=
-            template
-                .replace('%src%', 'output/' + path.relative(baseOutputPath, picture.getPath() + '?d=' + Date.now()))
-                .replace('%id%', picture.id);
-    });
-
-    if ('hidden' === hidden) {
-        container.innerHTML = messages.error.any_bg;
-    } else {
-        loadFusionButton.setAttribute('data-use', picture.id);
-    }
-
-    loadFusionButton.className = hidden;
-};
-
-const fusionLoad = (event) => {
-    const element = event.currentTarget;
-    const bgList = document.querySelectorAll('.bgList:checked');
-    const picture = project.getPictureById(element.getAttribute('data-use'));
-    const bgListId = [];
-
-    if (0 === bgList.length) {
-        notify(messages.error.any_bg_selected, 'error');
-        return;
-    }
-
-    _.each(bgList, b => bgListId.push(b.getAttribute('data-bg')));
-
-    const bgForWork = project.getPictureById(bgListId[0]);
-
-    fusionContainer.style.width = bgForWork.width + 'px';
-    fusionContainer.style.height = bgForWork.height + 'px';
-    // eslint-disable-next-line max-len
-    fusionContainer.style.background = 'url(%s) center center no-repeat'.replace('%s', 'output/' + path.relative(baseOutputPath, bgForWork.getPath() + '?d=' + Date.now()));
-
-    pictureFusion.style.width = picture.width;
-    pictureFusion.style.height = picture.height;
-    pictureFusion.src = 'output/' + path.relative(baseOutputPath, picture.getPath() + '?d=' + Date.now());
-    pictureFusion.style.left = '10px';
-    pictureFusion.style.top = '10px';
-
-    fusionContainer.setAttribute('data-picture', picture.id);
-    fusionContainer.setAttribute('data-picture', picture.id);
-    fusionContainer.setAttribute('data-bg', bgListId.join(','));
-
-    scroll(document.querySelector('#fusionPage'));
-};
-
-const moveDrag = (event) => {
-    const element = event.target;
-    const offsetX = parseInt(element.getAttribute('data-offset-x'));
-    const offsetY = parseInt(element.getAttribute('data-offset-y'));
-    const coordX = parseInt(element.getAttribute('data-coord-x'));
-    const coordY = parseInt(element.getAttribute('data-coord-y'));
-
-    switch (element.getAttribute('data-action')) {
-    case 'drag':
-        element.style.left = coordX + event.clientX - offsetX + 'px';
-        element.style.top = coordY + event.clientY - offsetY + 'px';
-        break;
-    case 'resize':
-        // eslint-disable-next-line max-len
-        pictureFusion.style.width = (parseInt(element.getAttribute('data-start-width')) + event.clientX - offsetX) + 'px';
-        // eslint-disable-next-line max-len
-        pictureFusion.style.height = (parseInt(element.getAttribute('data-start-height')) + event.clientY - offsetY) + 'px';
-        break;
-    default:
-        break;
-    }
-};
-
-const startDrag = (event) => {
-    event.preventDefault();
-
-    const element = event.currentTarget;
-    const offsetX = event.clientX;
-    const offsetY = event.clientY;
-
-    switch (element.className) {
-    case 'drag':
-        if (!element.style.left) {
-            element.style.left = '10px';
-        }
-
-        if (!element.style.top) {
-            element.style.top = '10px';
-        }
-        pictureFusion.setAttribute('data-coord-x', element.style.left.toString());
-        pictureFusion.setAttribute('data-coord-y', element.style.top.toString());
-        pictureFusion.setAttribute('data-offset-x', offsetX.toString());
-        pictureFusion.setAttribute('data-offset-y', offsetY.toString());
-        pictureFusion.setAttribute('data-action', 'drag');
-        fusionContainer.addEventListener('mousemove', moveDrag, false);
-        break;
-    case 'resize':
-        pictureFusion.setAttribute('data-offset-x', offsetX.toString());
-        pictureFusion.setAttribute('data-offset-y', offsetY.toString());
-        // eslint-disable-next-line max-len
-        pictureFusion.setAttribute('data-start-width', parseInt(document.defaultView.getComputedStyle(pictureFusion, null).width, 10).toString());
-        // eslint-disable-next-line max-len
-        pictureFusion.setAttribute('data-start-height', parseInt(document.defaultView.getComputedStyle(pictureFusion, null).height, 10).toString());
-        pictureFusion.setAttribute('data-action', 'resize');
-        fusionContainer.addEventListener('mousemove', moveDrag, false);
-        break;
-    default:
-        break;
-    }
-};
-
-const stopDrag = () => {
-    pictureFusion.setAttribute('data-coord-x', pictureFusion.style.left.toString());
-    pictureFusion.setAttribute('data-coord-y', pictureFusion.style.top.toString());
-    pictureFusion.setAttribute('data-action', '');
-};
-
-const toogleDragResize = (event) => {
-    const element = event.currentTarget;
-    element.className = 'drag' === element.className ? 'resize' : 'drag';
-};
-
-const makeFusion = () => {
-    const picture = project.getPictureById(fusionContainer.getAttribute('data-picture'));
-    const bgList = fusionContainer.getAttribute('data-bg').split(',');
-    const left = pictureFusion.style.left;
-    const top = pictureFusion.style.top;
-    const width = pictureFusion.offsetWidth;
-    const height = pictureFusion.offsetHeight;
-    const transformer = new Transformer(picture, bgList, left, top, width, height);
-
-    transformer.fusion();
-};
-
-const calculateAspectRatio = (srcWidth, srcHeight, maxWidth, maxHeight, r) => {
-    let ratio = r;
-
-    ratio = (null === ratio || 'undefined' === typeof ratio) ?
-        Math.min(maxWidth / srcWidth, maxHeight / srcHeight)
-        : ratio;
-
-    return { width: srcWidth * ratio, height: srcHeight * ratio, ratio: ratio };
-};
-
-const loadPreview = () => {
-    const paths = [];
-    const date = Date.now();
-    const list = project.rank;
-    let dimension = null;
-    let interval = null;
-
-    _.each(list, (l) => {
-        const current = project.getPictureById(l);
-
-        for (let i = 0; i < current.nbr; i++) {
-            paths.push('output/' + path.relative(baseOutputPath, current.getPath(i) + '?d=' + date));
-
-            if (current.isBg && null === dimension) {
-                dimension = calculateAspectRatio(current.width, current.height, 800, 700);
-            }
-        }
-    });
-
-    previewPicture.setAttribute('src', paths[0]);
-    previewPicture.style.width = dimension.width;
-    previewPicture.style.height = dimension.height;
-
-    document.querySelector('#previewButton').addEventListener('click', (e) => {
-        const element = e.currentTarget;
-
-        if (null === interval) {
-            const speed = parseInt(document.querySelector('#speedInput').value);
-            let i = 0;
-
-            element.value = 'Stopper la preview';
-
-            interval = setInterval(() => {
-                previewPicture.setAttribute('src', paths[i]);
-                i = (i + 1 < paths.length) ? i + 1 : 0;
-            }, speed);
-
-        } else {
-            clearInterval(interval);
-            interval = null;
-            element.value = 'Lancer la preview';
-        }
-    }, false);
-};
-
-const build = () => {
-    const speed = parseInt(document.querySelector('#speedInput').value);
-    const list = project.rank;
-    const sources = [];
-
-    _.each(list, (l) => {
-        const current = project.getPictureById(l);
-        current.identify();
-        sources.push(current.rootpath + '*');
-    });
-
-    const factory = new Factory(null);
-    factory.animate(speed, sources);
-};
-
-const quit = () => {
-    win.close();
-    return process.exit();
-};
-
-const getParentDir = path => ('/' === path.slice(-1))
-    ? path.split('/').slice(0, -2).join('/') + '/'
-    : path.split('/').slice(0, -1).join('/') + '/';
-
-const cpFolderContent = (from, callback) => {
-    const fileName = getFileNameByPath(from);
-    let folder = slugify(fileName.replace('_%d', '').split('.')[0]);
-    let that = this;
-
-    fs.exists(project.path + folder, (exist) => {
-        if (exist) {
-            let nbr = 0;
-
-            fs.readdirSync(project.path).filter((el) => {
-                if (
-                    fs.statSync(path.join(project.path, el)).isDirectory()
-                    && new RegExp('^(_([0-9]+))' + folder + '$').test(el)
-                ) {
-                    nbr += 1;
-                }
-            });
-
-            folder = `_${nbr}${folder}`;
-        }
-
-        const to = project.path + folder + '/';
-
-        fs.copyRecursive(that.getParentDir(from), to, (err) => {
-            if (err) {
-                notify(err.toString(), 'error');
-                return;
-            }
-
-            return callback ? callback(to) : true;
-        });
-    });
-};
-
-const cpDuplicate = (from, missing, callback) => {
-    const folder = getFileNameByPath(getParentDir(from));
-    let fileName = getFileNameByPath(from);
-    let nbr = 0;
-
-    fileName = fileName.replace('_%d', '_0');
-
-    fs.exists(project.path + folder, (exist) => {
-        if (exist) {
-            fileName = fileName.replace('_0', '');
-
-            fs.readdirSync(project.path + folder).filter((el) => {
-                if (
-                    fs.statSync(path.join(project.path + folder, el)).isFile()
-                    && new RegExp('^(_([0-9]+))' + fileName + '$').test(el)
-                ) {
-                    nbr += 1;
-                }
-            });
-        }
-
-        const to = `${project.path}${folder}/_${nbr}${fileName}`;
-
-        fs.copy(from, to, function (err) {
-            if (err) {
-                notify(err.toString(), 'error');
-                return;
-            }
-
-            return callback ? callback(missing - 1) : true;
-        });
-    });
-};
-
-const makeId = () => Math.random().toString(36).substr(2);
-
-class Project {
-    constructor(base, name) {
+            return swal(title, text, type);
+        };
+        /** Check if the type mime is a picture */
+        this.isPicture = function (mime) {
+            return ["image/gif", "image/jpeg", "image/png"].indexOf(mime) !== -1;
+        };
+        this.scroll = function (target) {
+            return window.scrollTo(0, target.offsetTop);
+        };
+    };
+
+    /**
+     * App object
+     * @constructor
+     */
+    var Project = function (base, name) {
         this.path = base + name + '/';
         this.name = name;
         this.pictures = [];
         this.rank = [];
-    }
-
-    getPictureById(id) {
-        return _.findWhere(this.pictures, { id });
-    }
-
-    removePicture(id) {
-        const pictures = this.pictures;
-
-        for (let i = 0, l = pictures.length; i < l; i++) {
-            if (pictures[i].id === id) {
-                this.pictures.splice(i, 1);
-                this.rank.splice(this.rank.indexOf(id), 1);
-
-                return true;
+        this.getPictureById = function (id) {
+            var pictures = this.pictures;
+            for (var p in pictures) {
+                if (pictures.hasOwnProperty(p)) {
+                    if (pictures[p].id === id) {
+                        return pictures[p];
+                    }
+                }
             }
-        }
+            return null;
+        };
+        this.removePicture = function (id) {
+            var pictures = this.pictures;
+            for (var i = 0, l = pictures.length; i < l; i++) {
+                if (pictures[i].id === id) {
+                    this.pictures.splice(i, 1);
+                    this.rank.splice(this.rank.indexOf(id), 1);
+                    return true;
+                }
+            }
+            return false;
+        };
+        this.clonePicture = function (picture, path) {
+            if (!picture instanceof Picture) throw "picture is null";
+            var copy = new Picture(path);
+            copy.isExplode = picture.isExplode;
+            copy.isBg = picture.isBg;
+            copy.nbr = picture.nbr;
+            copy.format = picture.format;
+            copy.width = picture.width;
+            copy.height = picture.height;
+            this.pictures.push(copy);
+            this.rank.push(copy.id);
+            return copy;
+        };
+    };
 
-        return false;
-    }
-
-    clonePicture(picture) {
-        if (!(picture instanceof Picture)) {
-            throw 'picture is null';
-        }
-
-        const copy = _.clone(picture);
-        copy.id = makeId();
-
-        this.pictures.push(copy);
-        this.rank.push(copy.id);
-
-        return copy;
-    }
-}
-
-class Picture {
-    constructor(path) {
-        this.id = makeId();
-        this.rootpath = getParentDir(path);
-        this.name = getFileNameByPath(path).replace('_0', '_%d');
+    /**
+     * @param path
+     * @type String path
+     * @constructor
+     */
+    var Picture = function (path) {
+        this.id = Math.random().toString(36).substr(2);
+        this.rootpath = mm.getParentDir(path);
+        this.name = mm.getFileNameByPath(path).replace('_0', '_%d');
         this.path = this.rootpath + this.name;
         this.isExplode = false;
         this.nbr = 1;
@@ -759,170 +699,127 @@ class Picture {
         this.height = null;
         this.format = null;
         this.isBg = null;
-    }
-
-    identify() {
-        const path = this.getPath();
-
-        im.identify(path, (err, features) => {
-            if (err) {
-                throw err;
+        this.identify = function () {
+            var that = this;
+            var path = this.getpath();
+            im.identify(path, function (err, features) {
+                if (err) throw err;
+                that.width = features.width;
+                that.height = features.height;
+                that.format = features.format.toUpperCase();
+                that.isBg = that.setBg();
+            });
+        };
+        this.isGif = function () {
+            return 'GIF' === this.format;
+        };
+        this.setBg = function () {
+            if (null === this.isBg || 'undefined' === typeof this.isBg) {
+                this.isBg = ('GIF' !== this.format && !this.isExplode);
             }
+        };
+        this.getpath = function (n) {
+            n = (null === n || 'undefined' === typeof n) ? 0 : n;
+            return this.path.replace('_%d', '_' + n);
+        };
+    };
 
-            this.width = features.width;
-            this.height = features.height;
-            this.format = features.format.toUpperCase();
-            this.isBg = this.setBg();
-        });
-    }
-
-    isGif() {
-        return 'GIF' === this.format;
-    }
-
-    setBg() {
-        if (null === this.isBg || 'undefined' === typeof this.isBg) {
-            this.isBg = ('GIF' !== this.format && !this.isExplode);
-        }
-    }
-
-    getPath(z) {
-        let n = z;
-        n = (null === n || 'undefined' === typeof n) ? 0 : n;
-
-        return this.path.replace('_%d', '_' + n);
-    }
-}
-
-class Factory {
-    constructor(picture) {
+    /**
+     * @param picture
+     * @type Picture picture
+     * @constructor
+     * Picture handler
+     */
+    var Factory = function (picture) {
         this.picture = picture;
-    }
-
-    resize(w, h, z, decompose) {
-        let n = z;
-
-        n = (null === n || 'undefined' === typeof n) ? 0 : n;
-
-        im.resize({
-            srcPath: this.picture.getPath(n),
-            dstPath: this.picture.getPath(n),
-            width: w + '!',
-            height: h + '!',
-        }, (err) => {
-            if (err) {
-                throw err;
-            }
-
-            if (n + 1 < this.picture.nbr) {
-                return this.resize(w, h, n + 1, decompose);
-            }
-
-            this.picture.width = w;
-            this.picture.height = h;
-
-            return decompose ? this.decompose() : true;
-        });
-    }
-
-    decompose() {
-        let newPath = this.picture.rootpath + this.picture.name.replace('.gif', '.png');
-
-        im.convert([this.picture.getPath(), '-coalesce', newPath],
-            (err) => {
-                if (err) {
-                    throw err;
+        this.resize = function (w, h, n, decompose) {
+            var that = this;
+            n = (null === n || 'undefined' === typeof n) ? 0 : n;
+            im.resize({
+                srcPath: that.picture.getpath(n),
+                dstPath: that.picture.getpath(n),
+                width: w + '!',
+                height: h + '!'
+            }, function (err) {
+                if (err) throw err;
+                if (n + 1 < that.picture.nbr) return that.resize(w, h, n + 1, decompose);
+                else {
+                    that.picture.width = w;
+                    that.picture.height = h;
+                    return decompose ? that.decompose() : true;
                 }
-
-                fs.rmrf(this.picture.getPath(), (err) => {
-                    if (err) {
-                        throw err;
-                    }
-
-                    let nbr = 0;
-
-                    fs.readdir(this.picture.rootpath, (err, items) => {
-                        if (err) {
-                            throw err;
-                        }
-
-                        for (let i = 0; i < items.length; i++) {
-                            // eslint-disable-next-line no-plusplus
-                            this.picture.nbr = ++nbr;
-                        }
-
-                        this.picture.isExplode = true;
-                        this.picture.name = getFileNameByPath(newPath);
-                        this.picture.path = newPath;
-                        this.picture.format = 'PNG';
+            });
+        };
+        this.decompose = function () {
+            var newPath = this.picture.rootpath + this.picture.name.replace('.gif', '.png');
+            var that = this;
+            im.convert([this.picture.getpath(), '-coalesce', newPath],
+                function (err) {
+                    if (err) throw err;
+                    fs.rmrf(that.picture.getpath(), function (err) {
+                        if (err) throw err;
+                        var nbr = 0;
+                        fs.readdir(picture.rootpath, function (err, items) {
+                            if (err) throw err;
+                            for (var i = 0; i < items.length; i++) {
+                                that.picture.nbr = ++nbr;
+                            }
+                            that.picture.isExplode = true;
+                            that.picture.name = mm.getFileNameByPath(newPath);
+                            that.picture.path = newPath;
+                            that.picture.format = 'PNG';
+                        });
                     });
                 });
-            });
-    }
-
-    append(transformer, z) {
-        let n = z;
-
-        n = (null === n || 'undefined' === typeof n) ? 0 : n;
-
-        const bg = transformer.bgList[0];
-        const picture = this.picture;
-        const width = transformer.width;
-        const height = transformer.height;
-        const top = transformer.top;
-        const left = transformer.left;
-        const position = `${width}!x${height}!+${left.replace('px', '')}+${top.replace('px', '')}`;
-
-        imc.composite(
-            [
-                '-compose',
-                'Over',
-                '-geometry',
-                position,
-                '-gravity',
-                'Northwest',
-                picture.getPath(n),
-                bg.getPath(n),
-                bg.getPath(n),
-            ],
-            (err) => {
-                if (err) {
-                    throw err;
-                }
-
-                if (n + 1 < bg.nbr) {
-                    return this.append(transformer, n + 1);
-                }
-
-                transformer.bgList.shift();
-
-                if (0 !== transformer.bgList.length) {
-                    return this.append(transformer);
-                }
-
-                notify(messages.success.ok, 'success');
-            });
-    }
-
-    animate(speed, sources) {
-        const args = ['-delay', parseInt(speed / 10), '-loop', 0];
-
-        _.each(sources, s => args.push(s));
-
-        args.push(`${baseOutputPath}${slugify(project.name)}.gif`);
-
-        im.convert(args, (err) => {
-            if (err) {
-                throw err;
+        };
+        this.append = function (transformer, n) {
+            n = (null === n || 'undefined' === typeof n) ? 0 : n;
+            var bg = transformer.bgList[0];
+            var picture = this.picture;
+            var width = transformer.width;
+            var height = transformer.height;
+            var top = transformer.top;
+            var left = transformer.left;
+            var position = width + '!x' + height + '!+' + left.replace('px', '') + '+' + top.replace('px', '');
+            var that = this;
+            imc.composite(['-compose', 'Over', '-geometry', position, '-gravity', 'Northwest', picture.getpath(n), bg.getpath(n), bg.getpath(n)],
+                function (err) {
+                    if (err) throw err;
+                    if (n + 1 < bg.nbr) {
+                        return that.append(transformer, n + 1);
+                    } else {
+                        transformer.bgList.shift();
+                        if (0 !== transformer.bgList.length) {
+                            return that.append(transformer);
+                        } else {
+                            mm.notify('ok', 'success');
+                        }
+                    }
+                });
+        };
+        this.animate = function (speed, sources) {
+            var args = ['-delay', parseInt(speed / 10), '-loop', 0];
+            for (var i = 0, l = sources.length; i < l; i++) {
+                args.push(sources[i]);
             }
+            args.push(mm._baseOutputPath + mm.slugify(mm.project.name) + '.gif');
+            im.convert(args, function (err) {
+                if (err) throw err;
+                mm.notify('ok', 'success');
+            });
+        };
+    };
 
-            notify(messages.success.ok, 'success');
-        });
-    }
-}
-
-class Transformer {
-    constructor(picture, bgList, left, top, width, height) {
+    /**
+     * @param picture
+     * @param bgList
+     * @param left
+     * @param top
+     * @param width
+     * @param height
+     * @constructor
+     */
+    var Transformer = function (picture, bgList, left, top, width, height) {
         this.picture = picture;
         this.bgList = bgList;
         this.left = left;
@@ -930,79 +827,54 @@ class Transformer {
         this.width = width;
         this.height = height;
         this.tmp = null;
-    }
-
-    duplicate(missing) {
-        cpDuplicate(this.tmp.getPath(), missing, (m) => {
-            this.tmp.nbr += 1;
-
-            if (0 < m) {
-                return this.duplicate(m);
+        this.duplicate = function (missing) {
+            var that = this;
+            mm.cpDuplicate(this.tmp.getpath(), missing, function (missing) {
+                that.tmp.nbr++;
+                if (missing > 0) {
+                    return that.duplicate(missing);
+                } else {
+                    var img = mm.project.getPictureById(that.tmp.id);
+                    img.nbr = that.tmp.nbr;
+                    that.tmp = null;
+                    return that.fusion();
+                }
+            });
+        };
+        this.fusion = function () {
+            var bgList = this.bgList;
+            var bgS = [];
+            var nbrGif = this.picture.nbr;
+            var nbrBg = 0;
+            for (var b in bgList) {
+                if (bgList.hasOwnProperty(b)) {
+                    var bg = mm.project.getPictureById(bgList[b]);
+                    bgS.push(bg);
+                    nbrBg = Math.max(nbrBg, bg.nbr);
+                }
             }
-
-            let img = project.getPictureById(this.tmp.id);
-            img.nbr = this.tmp.nbr;
-            this.tmp = null;
-
-            return this.fusion();
-        });
-    }
-
-    fusion() {
-        const bgList = this.bgList;
-        const bgS = [];
-        const nbrGif = this.picture.nbr;
-        let nbrBg = 0;
-
-        _.each(bgList, (b) => {
-            const bg = project.getPictureById(b);
-            bgS.push(bg);
-            nbrBg = Math.max(nbrBg, bg.nbr);
-        });
-
-        if (nbrBg > nbrGif) {
-            this.tmp = this.picture;
-            return this.duplicate(nbrBg - nbrGif);
-        }
-
-        _.each(bgS, (b) => {
-            if (nbrGif > b.nbr) {
-                this.tmp = b;
-                return this.duplicate(nbrBg - b.nbr);
+            if (nbrBg > nbrGif) {
+                this.tmp = this.picture;
+                return this.duplicate(nbrBg - nbrGif);
             }
-        });
+            for (b in bgS) {
+                if (bgS.hasOwnProperty(b)) {
+                    var current = bgS[b];
+                    if (nbrGif > current.nbr) {
+                        this.tmp = current;
+                        return this.duplicate(nbrBg - current.nbr);
+                    }
+                }
+            }
+            this.bgList = bgS;
+            var factory = new Factory(this.picture);
+            factory.append(this);
+        };
+    };
 
-        this.bgList = bgS;
-        const factory = new Factory(this.picture);
-
-        factory.append(this);
-    }
-}
-
-createButton.addEventListener('click', createProject, false);
-deleteProjectButton.addEventListener('click', deleteProject, false);
-updatePicturePageLink.addEventListener('click', loadPicture, false);
-updatePreviewPageLink.addEventListener('click', loadPreview, false);
-submitEditButton.addEventListener('click', editPicture, false);
-duplicateButton.addEventListener('click', duplicate, false);
-fusionButton.addEventListener('click', prepareFusionLoad, false);
-loadFusionButton.addEventListener('click', fusionLoad, false);
-makeFusionButton.addEventListener('click', makeFusion, false);
-ratioCheckbox.addEventListener('click', ratio, false);
-editHeightInput.addEventListener('blur', size, false);
-editWidthInput.addEventListener('blur', size, false);
-uploadPage.addEventListener('drop', upload, false);
-uploadFileButton.addEventListener('change', upload, false);
-uploadPage.addEventListener('dragover', dragOver, false);
-uploadPage.addEventListener('dragleave', dragLeave, false);
-pictureFusion.addEventListener('mousedown', startDrag, false);
-fusionContainer.addEventListener('mouseup', stopDrag, false);
-pictureFusion.addEventListener('dblclick', toogleDragResize, false);
-quitLink.addEventListener('click', quit, false);
-
-window.ondragover = window.ondrop = function (e) {
-    e.preventDefault();
-    return false;
-};
-
-document.querySelector('#buildButton').addEventListener('click', build, false);
+    /** Initialisation */
+    window.onload = function () {
+        mm = new MMGifMaker();
+        mm.initialize();
+    };
+})();
