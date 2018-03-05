@@ -84,7 +84,7 @@
             var name = mm.slugify(mm._projectNameInput.value);
             var path = mm._baseOutputPath + name;
             fs.exists(path, function (exist) {
-                if (exist) return mm.notify("Un projet du mÃªme nom existe dÃ©jÃ ", 'error');
+                if (exist) return mm.notify("Un projet du même nom existe déjà ", 'error');
                 fs.mkdir(path, function () {
                     mm.project = new Project(mm._baseOutputPath, name);
                     mm._createButton.className = 'hidden';
@@ -163,7 +163,7 @@
         /** Load picture */
         this.loadPicture_ = function () {
             if (null === mm.project) {
-                return mm.notify("Vous devez crÃ©er un projet", "warning");
+                return mm.notify("Vous devez créer un projet", "warning");
             }
             mm._pictureTable.innerHTML = '';
             if (0 === mm.project.pictures.length) {
@@ -219,7 +219,7 @@
                     if (err) throw err;
                     mm.project.removePicture(picture.id);
                     mm.loadPicture_();
-                    mm.notify("Image supprimÃ©e avec succÃ¨s", 'success');
+                    mm.notify("Image supprimée avec succès", 'success');
                 });
             });
         };
@@ -234,7 +234,7 @@
             mm._duplicateButton.setAttribute('data-use', id);
             if (!picture.isBg) {
                 if (picture.isGif() && !picture.isExplode) {
-                    mm.notify("Ce gif n'est pas dÃ©composÃ©", 'warning');
+                    mm.notify("Ce gif n'est pas décomposé", 'warning');
                 } else {
                     mm._fusionButton.setAttribute('data-use', id);
                     parent.className = '';
@@ -344,7 +344,7 @@
             var picture = mm.project.getPictureById(this.getAttribute('data-use'));
             var bgListId = [];
             if (0 === bgList.length) {
-                return mm.notify("Vous devez sÃ©lectionner des backgrounds", "error");
+                return mm.notify("Vous devez sélectionner des backgrounds", "error");
             }
             for (var i = 0, l = bgList.length; i < l; i++) {
                 bgListId.push(bgList[i].getAttribute('data-bg'));
